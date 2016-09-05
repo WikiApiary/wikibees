@@ -67,10 +67,10 @@ class AuditBee(ApiaryBot):
                 match = re.search(r'(\d+)\.(\d+)', extension['version'])
                 (smw_version_major, smw_version_minor) = (int(match.group(1)), int(match.group(2)))
 
-                if (smw_version_major >= 1) and (smw_version_minor >= 6) and (site['Collect semantic statistics'] is False):
+                if ((smw_version_major >= 1 and smw_version_minor >= 6) or smw_version_major >= 2) and site['Collect semantic statistics'] is False:
                     self.set_flag(site['pagename'], 'Collect semantic statistics', 'Yes', "Enabling statistics collection for Semantic MediaWiki %d.%d." % (smw_version_major, smw_version_minor))
-                if (smw_version_major >= 1) and (smw_version_minor < 6) and (site['Collect semantic statistics'] is True):
-                    self.set_flag(site['pagename'], 'Collect semantic statistics', 'Yes', "Disabling statistics collection for Semantic MediaWiki %d.%d." % (smw_version_major, smw_version_minor))
+                if (smw_version_major == 1 and smw_version_minor < 6) and site['Collect semantic statistics'] is True:
+                    self.set_flag(site['pagename'], 'Collect semantic statistics', 'No', "Statistics collection not supported for Semantic MediaWiki %d.%d." % (smw_version_major, smw_version_minor))
 
     def set_audit(self, site, data):
         # Get the major and minor version numbers of MediaWiki
@@ -362,26 +362,31 @@ class AuditBee(ApiaryBot):
                 except:
                     has_api_url = None
 
-                my_sites.append({
-                    'pagename': pagename,
-                    'fullurl': site['fullurl'],
-                    'Has API URL': has_api_url,
-                    'Has statistics URL': has_statistics_url,
-                    'Check every': int(site['printouts']['Check every'][0]),
-                    'Creation date': site['printouts']['Creation date'][0],
-                    'Has ID': int(site['printouts']['Has ID'][0]),
-                    'Collect general data': collect_general_data,
-                    'Collect extension data': collect_extension_data,
-                    'Collect skin data': collect_skin_data,
-                    'Collect statistics': collect_statistics,
-                    'Collect semantic statistics': collect_semantic_statistics,
-                    'Collect semantic usage': collect_semantic_usage,
-                    'Collect statistics stats': collect_statistics_stats,
-                    'Collect logs': collect_logs,
-                    'Collect recent changes': collect_recent_changes,
-                    'Is audited': (site['printouts']['Is audited'][0] == "t"),
-                    'Is active': (site['printouts']['Is active'][0] == "t")
-                })
+                try:
+                    my_sites.append({
+                        'pagename': pagename,
+                        'fullurl': site['fullurl'],
+                        'Has API URL': has_api_url,
+                        'Has statistics URL': has_statistics_url,
+                        'Check every': int(site['printouts']['Check every'][0]),
+                        'Creation date': site['printouts']['Creation date'][0],
+                        'Has ID': int(site['printouts']['Has ID'][0]),
+                        'Collect general data': collect_general_data,
+                        'Collect extension data': collect_extension_data,
+                        'Collect skin data': collect_skin_data,
+                        'Collect statistics': collect_statistics,
+                        'Collect semantic statistics': collect_semantic_statistics,
+                        'Collect semantic usage': collect_semantic_usage,
+                        'Collect statistics stats': collect_statistics_stats,
+                        'Collect logs': collect_logs,
+                        'Collect recent changes': collect_recent_changes,
+                        'Is audited': (site['printouts']['Is audited'][0] == "t"),
+                        'Is active': (site['printouts']['Is active'][0] == "t")
+                    })
+                except Exception, e:
+                    print "Exception while appending %s" % pagename
+                    print e
+
         return my_sites
 
     def main(self):

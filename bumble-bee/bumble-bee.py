@@ -33,6 +33,7 @@ import pygeoip
 sys.path.append('../lib')
 from apiary import ApiaryBot
 from PyWhoisAPI import *
+import validators
 
 
 class BumbleBee(ApiaryBot):
@@ -332,7 +333,7 @@ class BumbleBee(ApiaryBot):
         # Go out and get the statistic information
         data_url = site['Has API URL'] + ''.join([
             '?action=smwinfo',
-            '&info=propcount%7Cusedpropcount%7Cdeclaredpropcount%7Cproppagecount%7Cquerycount%7Cquerysize%7Cconceptcount%7Csubobjectcount',
+            '&info=propcount%7Cusedpropcount%7Cdeclaredpropcount%7Cproppagecount%7Cquerycount%7Cquerysize%7Cconceptcount%7Csubobjectcount%7Cerrorcount',
             '&format=json'])
         if self.args.verbose >= 2:
             print "Pulling SMW info from %s." % data_url
@@ -350,27 +351,32 @@ class BumbleBee(ApiaryBot):
                 sql_command = """
                     INSERT INTO smwinfo
                         (website_id, capture_date, response_timer, propcount, proppagecount, usedpropcount, declaredpropcount,
-                            querycount, querysize, conceptcount, subobjectcount)
+                            querycount, querysize, conceptcount, subobjectcount, errorcount)
                     VALUES
-                        (%d, '%s', %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        (%d, '%s', %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     """
 
                 if 'propcount' in data['info']:
-                        propcount = data['info']['propcount']
+                    propcount = data['info']['propcount']
                 else:
-                        propcount = 'null'
+                    propcount = 'null'
                 if 'proppagecount' in data['info']:
-                        proppagecount = data['info']['proppagecount']
+                    proppagecount = data['info']['proppagecount']
                 else:
-                        proppagecount = 'null'
+                    proppagecount = 'null'
                 if 'usedpropcount' in data['info']:
-                        usedpropcount = data['info']['usedpropcount']
+                    usedpropcount = data['info']['usedpropcount']
                 else:
-                        usedpropcount = 'null'
+                    usedpropcount = 'null'
                 if 'declaredpropcount' in data['info']:
-                        declaredpropcount = data['info']['declaredpropcount']
+                    declaredpropcount = data['info']['declaredpropcount']
                 else:
-                        declaredpropcount = 'null'
+                    declaredpropcount = 'null'
+                if 'errorcount' in data['info']:
+                    errorcount = data['info']['errorcount']
+                else:
+                    errorcount = 'null'
+
 
                 # Catch additional results returned in SMW 1.9
                 if 'querycount' in data['info']:
@@ -403,7 +409,8 @@ class BumbleBee(ApiaryBot):
                         querycount,
                         querysize,
                         conceptcount,
-                        subobjectcount)
+                        subobjectcount,
+                        errorcount)
 
                     self.runSql(sql_command)
                     self.stats['smwinfo'] += 1
@@ -674,6 +681,9 @@ class BumbleBee(ApiaryBot):
                             value = value.replace('&nbsp;', ' ').replace('&#160;', ' ').replace('&160;', ' ')
                             value = h.unescape(value)
 
+                            if value.strip() == '':
+                                template_block += '|Remote error=No name provided for extension.\n'
+
                         if item == 'version':
                             # Breakdown the version information for more detailed analysis
                             ver_details = self.parse_version(value)
@@ -703,13 +713,18 @@ class BumbleBee(ApiaryBot):
                             value = re.sub(r'\.\.\.', r'', value)
                             value = re.sub(r'&nbsp;', r' ', value)
                             # Lastly, there could be HTML encoded stuff in these
+                            value = self.filter_illegal_chars(value)
                             value = h.unescape(value)
 
                         if item == 'url':
                             # Seems some people really really love protocol agnostic URL's
                             # We detect them and add a generic http: protocol to them
-                            if re.match(r'^\/\/', value):
-                                value = 'http:' + value
+                            if value.strip() != '':
+                                if re.match(r'^\/\/', value):
+                                    value = 'http:' + value
+                                if validators.url(value) != True:
+                                    template_block += '|Remote error=\'%s\' is not a valid URL.\n' % value
+                                    value = ""
 
                         template_block += "|%s=%s\n" % (name, value)
 
@@ -719,22 +734,80 @@ class BumbleBee(ApiaryBot):
 
         return template_block
 
-    def record_extensions(self, site):
-        data_url = site['Has API URL'] + "?action=query&meta=siteinfo&siprop=extensions&format=json"
+    def build_libraries_template(self, ext_obj):
+        template_block = "<noinclude>{{Libraries subpage}}</noinclude><includeonly>"
+
+        libraries_sorted = sorted(ext_obj, key=operator.itemgetter('name'))
+
+        for x in libraries_sorted:
+            if 'name' in x:
+                # Start the template instance
+                template_block += "{{Library in use\n"
+                for item in x:
+                    # Loop through all the items in the library data and build the instance
+                    if item == 'name':
+                        (vendor, package) = x[item].split('/')
+                        template_block += "|vendor=%s\n" % vendor
+                        template_block += "|package=%s\n" % package
+                    else:
+                        template_block += "|%s=%s\n" % (item, x[item])
+
+                # Now end the template instance
+                template_block += "}}\n"
+
+        template_block += "</includeonly>"
+
+        return template_block
+
+    def record_libraries(self, site):
+        data_url = site['Has API URL'] + "?action=query&meta=siteinfo&siprop=libraries&format=json"
         if self.args.verbose >= 2:
-            print "Pulling extensions from %s." % data_url
+            print "Pulling extensions and libraries from %s." % data_url
         (success, data, duration) = self.pull_json(site, data_url)
         ret_value = True
         if success:
             # Successfully pulled data
             if 'query' in data:
-                datapage = "%s/Extensions" % site['pagename']
-                template_block = self.build_extensions_template(data['query']['extensions'])
-                socket.setdefaulttimeout(30)
-                c = self.apiary_wiki.call({'action': 'edit', 'title': datapage, 'text': template_block, 'token': self.edit_token, 'bot': 'true'})
-                if self.args.verbose >= 3:
-                    print c
-                self.stats['extensions'] += 1
+                if 'libraries' in data['query']:
+                    datapage = "%s/Libraries" % site['pagename']
+                    template_block = self.build_libraries_template(data['query']['libraries'])
+                    socket.setdefaulttimeout(30)
+                    c = self.apiary_wiki.call({'action': 'edit', 'title': datapage, 'text': template_block, 'token': self.edit_token, 'bot': 'true'})
+                    if self.args.verbose >= 3:
+                        print c
+                    # self.stats['libraries'] += 1
+
+            else:
+                self.record_error(
+                    site=site,
+                    log_message='Returned unexpected JSON when requesting library data.',
+                    log_type='warn',
+                    log_severity='normal',
+                    log_bot='Bumble Bee',
+                    log_url=data_url
+                )
+                ret_value = False
+        return ret_value
+
+    def record_extensions(self, site):
+        data_url = site['Has API URL'] + "?action=query&meta=siteinfo&siprop=extensions&format=json"
+        if self.args.verbose >= 2:
+            print "Pulling extensions and libraries from %s." % data_url
+        (success, data, duration) = self.pull_json(site, data_url)
+        ret_value = True
+        if success:
+            # Successfully pulled data
+            if 'query' in data:
+
+                if 'extensions' in data['query']:
+                    datapage = "%s/Extensions" % site['pagename']
+                    template_block = self.build_extensions_template(data['query']['extensions'])
+                    socket.setdefaulttimeout(30)
+                    c = self.apiary_wiki.call({'action': 'edit', 'title': datapage, 'text': template_block, 'token': self.edit_token, 'bot': 'true'})
+                    if self.args.verbose >= 3:
+                        print c
+                    self.stats['extensions'] += 1
+
             else:
                 self.record_error(
                     site=site,
@@ -787,6 +860,9 @@ class BumbleBee(ApiaryBot):
                             # This paramter won't appear unless it is true
                             value = True
 
+                        if item == 'name' and value == '':
+                            template_block += '|Remote error=No name provided for skin.\n'
+
                         template_block += "|%s=%s\n" % (name, value)
 
                 # Now end the template instance
@@ -797,7 +873,7 @@ class BumbleBee(ApiaryBot):
         return template_block
 
     def record_skins(self, site):
-        data_url = site['Has API URL'] + "?action=query&meta=siteinfo&siprop=skins&format=json"
+        data_url = site['Has API URL'] + "?action=query&meta=siteinfo&siprop=skins&siinlanguagecode=en&format=json"
         if self.args.verbose >= 2:
             print "Pulling skin info from %s." % data_url
         (success, data, duration) = self.pull_json(site, data_url)
@@ -848,9 +924,15 @@ class BumbleBee(ApiaryBot):
                         name = key_names.get(item, item)
                         value = x[item]
 
-                        if item == 'local':
+                        if item in ['local', 'protorel', 'trans']:
                             # This parameter won't appear unless it is true
                             value = True
+
+                        if item == 'url':
+                            value = value.strip()
+                            if not validators.url(value):
+                                template_block += '|Remote error=\'%s\' is not a valid URL.\n' % value
+                                value = ""
 
                         template_block += "|%s=%s\n" % (name, value)
 
@@ -862,7 +944,7 @@ class BumbleBee(ApiaryBot):
         return template_block
 
     def record_interwikimap(self, site):
-        data_url = site['Has API URL'] + "?action=query&meta=siteinfo&siprop=interwikimap&format=json"
+        data_url = site['Has API URL'] + "?action=query&meta=siteinfo&siprop=interwikimap&siinlanguagecode=en&format=json"
         if self.args.verbose >= 2:
             print "Pulling interwikimap info from %s." % data_url
         (success, data, duration) = self.pull_json(site, data_url)
@@ -908,6 +990,11 @@ class BumbleBee(ApiaryBot):
                 if item not in ignore_keys:
                     name = key_names.get(item, item)
                     value = ext_obj[x][item]
+
+                    if item == 'id':
+                        if not isinstance(value, (int, long)):
+                            template_block += '|Remote error=Namespace ID \'%s\' is not a number.\n' % value
+                            value = ""
 
                     if item in ['subpages', 'content']:
                         # This parameter won't appear unless it is true
@@ -1006,6 +1093,7 @@ class BumbleBee(ApiaryBot):
                     if site['Collect extension data']:
                         process = "collect extension data"
                         status = self.record_extensions(site)
+                        status = self.record_libraries(site)
                         status = self.record_interwikimap(site)
                         status = self.record_namespaces(site)
                     if site['Collect skin data']:

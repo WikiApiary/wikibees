@@ -202,7 +202,7 @@ window.Chart = function(targetDiv, id, defaultGraph) {
     // SMW Graphs
     {
       id: "propcount",
-      name: "Property Count",
+      name: "SMW Property Count",
       freq: ["raw", "daily", "weekly"],
       type: "smw",
       dygraphOpts: {
@@ -216,7 +216,7 @@ window.Chart = function(targetDiv, id, defaultGraph) {
         axisLabelFontSize: 10,
         fillGraph: true,
         maxNumberWidth: 12,
-        title: 'Property Count',
+        title: 'SMW Property Count',
         labelsDiv: _legendDiv,
         yLabelWidth: 12,
         rightGap: 10
@@ -225,7 +225,7 @@ window.Chart = function(targetDiv, id, defaultGraph) {
     },
     {
       id: "properties",
-      name: "Properties",
+      name: "SMW Properties",
       freq: ["raw", "daily", "weekly"],
       type: "smw",
       dygraphOpts: {
@@ -238,17 +238,40 @@ window.Chart = function(targetDiv, id, defaultGraph) {
         ylabel: 'Properties',
         axisLabelFontSize: 10,
         maxNumberWidth: 12,
-        title: 'Properties',
+        title: 'SMW Properties',
         labelsDiv: _legendDiv,
         yLabelWidth: 12,
         rightGap: 10
       },
       path: "https://wikiapiary.com/apiary/data/properties.php?id=" + _id
     },
+    {
+      id: "errorcount",
+      name: "SMW Error Count",
+      freq: ["raw", "daily", "weekly"],
+      type: "smwusage",
+      dygraphOpts: {
+        labels: [ 'Date', 'Errors'],
+        axes: {
+          y: {
+            labelsKMB: true
+          }
+        },
+        ylabel: 'Errors',
+        axisLabelFontSize: 10,
+        maxNumberWidth: 12,
+        stackedGraph: true,
+        title: 'SMW Error Count',
+        labelsDiv: _legendDiv,
+        yLabelWidth: 12,
+        rightGap: 10
+      },
+      path: "https://wikiapiary.com/apiary/data/smwerrorcount.php?id=" + _id
+    },
     // SMW Usage graphs
     {
       id: "queries",
-      name: "Query Count",
+      name: "SMW Query Count",
       freq: ["raw", "daily", "weekly"],
       type: "smwusage",
       dygraphOpts: {
@@ -262,7 +285,7 @@ window.Chart = function(targetDiv, id, defaultGraph) {
         axisLabelFontSize: 10,
         fillGraph: true,
         maxNumberWidth: 12,
-        title: 'Query Count',
+        title: 'SMW Query Count',
         labelsDiv: _legendDiv,
         yLabelWidth: 12,
         rightGap: 10
@@ -271,7 +294,7 @@ window.Chart = function(targetDiv, id, defaultGraph) {
     },
     {
       id: "querypages",
-      name: "Query Pages",
+      name: "SMW Query Pages",
       freq: ["raw", "daily", "weekly"],
       type: "smwusage",
       dygraphOpts: {
@@ -285,7 +308,7 @@ window.Chart = function(targetDiv, id, defaultGraph) {
         axisLabelFontSize: 10,
         fillGraph: true,
         maxNumberWidth: 12,
-        title: 'Query Pages',
+        title: 'SMW Query Pages',
         labelsDiv: _legendDiv,
         yLabelWidth: 12,
         rightGap: 10
@@ -294,7 +317,7 @@ window.Chart = function(targetDiv, id, defaultGraph) {
     },
     {
       id: "querysize",
-      name: "Query Sizes",
+      name: "SMW Query Sizes",
       freq: ["raw", "daily", "weekly"],
       type: "smwusage",
       dygraphOpts: {
@@ -308,7 +331,7 @@ window.Chart = function(targetDiv, id, defaultGraph) {
         axisLabelFontSize: 10,
         maxNumberWidth: 12,
         stackedGraph: true,
-        title: 'Query Sizes',
+        title: 'SMW Query Sizes',
         labelsDiv: _legendDiv,
         yLabelWidth: 12,
         rightGap: 10
@@ -317,7 +340,7 @@ window.Chart = function(targetDiv, id, defaultGraph) {
     },
     {
       id: "queryformat",
-      name: "Query Formats",
+      name: "SMW Query Formats",
       freq: ["raw", "daily", "weekly"],
       type: "smwusage",
       dygraphOpts: {
@@ -333,7 +356,7 @@ window.Chart = function(targetDiv, id, defaultGraph) {
         axisLabelFontSize: 10,
         maxNumberWidth: 12,
         stackedGraph: true,
-        title: 'Query Formats',
+        title: 'SMW Query Formats',
         labelsDiv: _legendDiv,
         yLabelWidth: 12,
         rightGap: 10

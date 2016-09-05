@@ -31,16 +31,18 @@ class WorkerBee(ApiaryBot):
 | 800 = From WikiApiary, tracking {{PAGENAME}} and over {{formatnum:%d}} other extensions
 | 802 = From WikiApiary, tracking {{PAGENAME}} and over {{formatnum:%d}} other farms
 | 804 = From WikiApiary, tracking {{PAGENAME}} and over {{formatnum:%d}} other skins
+| 808 = From WikiApiary, tracking {{PAGENAME}} and over {{formatnum:%d}} other versions
 | From WikiApiary, monitoring the MediaWiki universe
 }}
 """
 
-        count_wiki = 19400
-        count_extensions = 4600
-        count_farms = 100
-        count_skins = 1300
+        count_wiki = 20230
+        count_extensions = 5200
+        count_farms = 130
+        count_skins = 1800
+        count_generators = 160
 
-        tagline_page = tagline_template % (count_wiki, count_extensions, count_farms, count_skins)
+        tagline_page = tagline_template % (count_wiki, count_extensions, count_farms, count_skins, count_generators)
 
         # Update MediaWiki:Tagline
         c = self.apiary_wiki.call({
@@ -125,57 +127,80 @@ ON
 
     def DeleteOldBotLogs(self):
         sql_query = """
-DELETE FROM
-    apiary_bot_log
-WHERE
-    log_date < '%s'
+DELETE FROM apiary_bot_log
+WHERE log_date < DATE_SUB(NOW(), INTERVAL 4 WEEK)
 """
-        delete_before = datetime.datetime.utcnow() - datetime.timedelta(weeks=4)
-        delete_before_str = delete_before.strftime('%Y-%m-%d %H:%M:%S')
-        if self.args.verbose >= 1:
-            print "Deleting apiary_bot_log before %s." % delete_before_str
-        my_sql = sql_query % (delete_before_str)
 
-        (success, rows_deleted) = self.runSql(my_sql)
-
+        (success, rows_deleted) = self.runSql(sql_query)
         if self.args.verbose >= 1:
-            print "Deleted %d rows." % rows_deleted
+            print "Deleted %d bot log rows." % rows_deleted
+
+        return True
+
+    def DeleteOldMultiProps(self):
+        sql_query = """
+DELETE FROM apiary_multiprops
+WHERE last_date < DATE_SUB(NOW(), INTERVAL 3 MONTH)
+"""
+        (success, rows_deleted) = self.runSql(sql_query)
+        if self.args.verbose >= 1:
+            print "Deleted %d multiproperty rows." % rows_deleted
 
         return True
 
     def DeleteOldWebsiteLogs(self):
         sql_query = """
-DELETE FROM
-   apiary_website_logs
-WHERE
-   log_date < '%s'
+DELETE FROM apiary_website_logs
+WHERE log_date < DATE_SUB(NOW(), INTERVAL 4 WEEK)
 """
-        delete_before = datetime.datetime.utcnow() - datetime.timedelta(weeks=8)
-        delete_before_str = delete_before.strftime('%Y-%m-%d %H:%M:%S')
-        if self.args.verbose >= 1:
-            print "Deleting apiary_website_logs before %s." % delete_before_str
-        my_sql = sql_query % (delete_before_str)
 
-        (success, rows_deleted) = self.runSql(my_sql)
+        (success, rows_deleted) = self.runSql(sql_query)
 
         if self.args.verbose >= 1:
-            print "Deleted %d rows." % rows_deleted
+            print "Deleted %d website log rows." % rows_deleted
 
         return True
+
+    def DeleteOrphanedBotPages(self):
+
+        # Get the list of pages in Category:Orphaned bot page
+        # https://wikiapiary.com/w/api.php?action=query&list=categorymembers&cmtitle=Category:Orphaned_bot_page&cmlimit=500&format=json
+        c = self.apiary_wiki.call({
+            'action': 'query',
+            'list': 'categorymembers',
+            'cmtitle': 'Category:Orphaned_bot_page',
+            'cmlimit': 500
+        })
+
+        for page in c['query']['categorymembers']:
+            print "Deleting %s (%d)..." % (page['title'], page['pageid'])
+
+            d = self.apiary_wiki.call({
+                'action': 'delete',
+                'pageid': page['pageid'],
+                'reason': 'Orphaned',
+                'token': self.edit_token
+                })
 
     def main(self):
         # Setup our connection to the wiki too
         self.connectwiki('Worker Bee')
 
         # Now perform our jobs
-        #self.UpdateTotalEdits()
-        self.UpdateTagline()
+        self.UpdateTotalEdits()
+        # self.UpdateTagline()
 
         # Delete old bot_log entries
-        #self.DeleteOldBotLogs()
+        self.DeleteOldBotLogs()
 
         # Delete old website_logs entries
-        #self.DeleteOldWebsiteLogs()
+        self.DeleteOldWebsiteLogs()
+
+        # Delete old multi-properties
+        self.DeleteOldMultiProps()
+
+        # Delete orphaned bot pages
+        self.DeleteOrphanedBotPages()
 
 # Run
 if __name__ == '__main__':
