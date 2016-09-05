@@ -140,12 +140,12 @@ class ApiaryBot:
                 return False, None, None
             return True, data, duration
 
-    def runSql(self, sql_command):
+    def runSql(self, sql_command, args = None):
         if self.args.verbose >= 3:
             print "SQL: %s" % sql_command
         try:
             cur = self.apiary_db.cursor()
-            cur.execute(sql_command)
+            cur.execute(sql_command, args)
             cur.close()
             self.apiary_db.commit()
             return True, cur.rowcount
@@ -176,19 +176,17 @@ class ApiaryBot:
         else:
             log_url = "'%s'" % log_url
 
-        temp_sql = "INSERT  apiary_website_logs (website_id, log_date, website_name, log_type, log_severity, log_message, log_bot, log_url) "
-        temp_sql += "VALUES (%d, \"%s\", \"%s\", \"%s\", \"%s\", \"%s\", %s, %s)" % (
-            site['Has ID'],
-            self.sqlutcnow(),
-            site['pagename'],
-            log_type,
-            log_severity,
-            log_message,
-            log_bot,
-            log_url
-        )
+        temp_sql = "INSERT  apiary_website_logs "
+        temp_sql += "(website_id, log_date, website_name, log_type, "
+        temp_sql += "log_severity, log_message, log_bot, log_url) "
 
-        self.runSql(temp_sql)
+        # The format string is not really a normal Python format
+        # string.  You must always use %s http://stackoverflow.com/a/5785163
+        temp_sql += "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
+        args = ( site['Has ID'], self.sqlutcnow(), site['pagename'],
+                 log_type, log_severity, log_message, log_bot, log_url )
+
+        self.runSql(temp_sql, args)
 
     def clear_error(self, sitename):
         # This function clears the error status of a meeting
@@ -218,10 +216,16 @@ class ApiaryBot:
 
     def connectwiki(self, bot_name):
         self.apiary_wiki = MediaWiki(self.config.get('WikiApiary', 'API'))
-        self.apiary_wiki.login(self.config.get(bot_name, 'Username'), self.config.get(bot_name, 'Password'))
+        c = self.apiary_wiki.login(self.config.get(bot_name, 'Username'), self.config.get(bot_name, 'Password'))
+        if self.args.verbose >= 1:
+            print "Username: %s Password: %s" % (self.config.get(bot_name, 'Username'), self.config.get(bot_name, 'Password'))
+            print c
         # We need an edit token
-        c = self.apiary_wiki.call({'action': 'query', 'titles': 'Foo', 'prop': 'info', 'intoken': 'edit'})
-        self.edit_token = c['query']['pages']['-1']['edittoken']
+        #c = self.apiary_wiki.call({'action': 'query', 'titles': 'Foo', 'prop': 'info', 'intoken': 'edit'})
+        c = self.apiary_wiki.call({'action': 'query', 'meta': 'tokens'})
+        self.edit_token = c['query']['tokens']['csrftoken']
+        if self.args.verbose >= 1:
+            print "Edit token: %s" % self.edit_token
 
     def get_websites(self, segment, site):
         filter_string = ""
@@ -333,24 +337,28 @@ class ApiaryBot:
                     if self.args.verbose >= 2:
                         print "Skipping %s (%s)" % (pagename, site['fullurl'])
                 else:
-                    my_sites.append({
-                        'pagename': pagename,
-                        'fullurl': site['fullurl'],
-                        'Has API URL': has_api_url,
-                        'Has statistics URL': has_statistics_url,
-                        'Check every': int(site['printouts']['Check every'][0]),
-                        'Creation date': site['printouts']['Creation date'][0],
-                        'Has ID': int(site['printouts']['Has ID'][0]),
-                        'Collect general data': collect_general_data,
-                        'Collect extension data': collect_extension_data,
-                        'Collect skin data': collect_skin_data,
-                        'Collect statistics': collect_statistics,
-                        'Collect semantic statistics': collect_semantic_statistics,
-                        'Collect semantic usage': collect_semantic_usage,
-                        'Collect statistics stats': collect_statistics_stats,
-                        'Collect logs': collect_logs,
-                        'Collect recent changes': collect_recent_changes
-                    })
+                    try:
+                        my_sites.append({
+                            'pagename': pagename,
+                            'fullurl': site['fullurl'],
+                            'Has API URL': has_api_url,
+                            'Has statistics URL': has_statistics_url,
+                            'Check every': int(site['printouts']['Check every'][0]),
+                            'Creation date': site['printouts']['Creation date'][0],
+                            'Has ID': int(site['printouts']['Has ID'][0]),
+                            'Collect general data': collect_general_data,
+                            'Collect extension data': collect_extension_data,
+                            'Collect skin data': collect_skin_data,
+                            'Collect statistics': collect_statistics,
+                            'Collect semantic statistics': collect_semantic_statistics,
+                            'Collect semantic usage': collect_semantic_usage,
+                            'Collect statistics stats': collect_statistics_stats,
+                            'Collect logs': collect_logs,
+                            'Collect recent changes': collect_recent_changes
+                        })
+                    except Exception, e:
+                        print "Failed to add %s" % pagename
+                        print e
 
             return my_sites
         else:
