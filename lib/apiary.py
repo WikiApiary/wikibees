@@ -97,9 +97,15 @@ class ApiaryBot:
             f = opener.open(req)
             duration = (datetime.datetime.now() - t1).total_seconds()
         except Exception, e:
+            msg = str(e)
+            p = re.compile('hostname \'([^\']+)\' doesn.t match either of')
+            m = p.match( msg )
+            if m.group(1) is not None:
+                msg = "Invalid SSL cert for domain name: " + m.group(1)
+
             self.record_error(
                 site=site,
-                log_message="%s" % str(e),
+                log_message=msg,
                 log_type='info',
                 log_severity='normal',
                 log_bot='Bumble Bee',
@@ -219,7 +225,12 @@ class ApiaryBot:
 
     def connectwiki(self, bot_name):
         self.apiary_wiki = MediaWiki(self.config.get('WikiApiary', 'API'))
-        c = self.apiary_wiki.login(self.config.get(bot_name, 'Username'), self.config.get(bot_name, 'Password'))
+        try:
+            c = self.apiary_wiki.login(self.config.get(bot_name, 'Username'), self.config.get(bot_name, 'Password'))
+        except Exception, e:
+            print "Couldn't connect: %s" % str(e)
+            print "QUITTING"
+            sys.exit()
         if self.args.verbose >= 1:
             print "Username: %s Password: %s" % (self.config.get(bot_name, 'Username'), self.config.get(bot_name, 'Password'))
             print c
