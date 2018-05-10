@@ -1,8 +1,8 @@
 <?php
 require_once ('/home/thingles/wikibots/WikiApiary/apiary-config.php');
 
-$id = $_GET['id'];
-$durationParam = $_GET['duration'];
+$id = isset( $_GET['id'] ) ? $_GET['id'] : 20;
+$durationParam = isset( $_GET['duration'] ) ? $_GET['id'] : '1w';
 
 try {
     $db = sprintf('mysql:host=%s;dbname=%s', DB_HOST, DB_NAME);
@@ -45,4 +45,3 @@ try {
 } catch(PDOException $e) {
     echo 'ERROR: ' . $e->getMessage();
 }
-?>
