@@ -1085,8 +1085,17 @@ class BumbleBee(ApiaryBot):
         start_time = time.time()
 
         # Setup our connection to the wiki too
-        self.connectwiki('Bumble Bee')
-
+	try:
+	    self.connectwiki('Bumble Bee')
+	except Exception, e:
+            self.record_error(
+                site=site,
+                log_message="%s" % e,
+                log_type='error',
+                log_severity='normal',
+                log_bot='Bumble Bee',
+	        log_url=None
+	    )
         # Get list of websites to work on
         sites = self.get_websites(self.args.segment, self.args.site)
 
