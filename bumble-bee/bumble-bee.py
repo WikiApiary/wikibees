@@ -1,4 +1,5 @@
 #! /usr/bin/env python
+#encoding: utf-8
 
 """
 Bumble Bee is responsible for collecting statistics and other information from
@@ -19,11 +20,10 @@ import ConfigParser
 import argparse
 import socket
 import MySQLdb as mdb
-import simplejson
+import json as simplejson
 import yaml
 import urllib2
 from urllib2 import Request, urlopen, URLError, HTTPError
-from simplemediawiki import MediaWiki
 import re
 import HTMLParser
 import BeautifulSoup
@@ -31,6 +31,7 @@ import operator
 import urlparse
 import pygeoip
 sys.path.append('../lib')
+from simplemediawiki import MediaWiki
 from apiary import ApiaryBot
 from PyWhoisAPI import *
 import validators
@@ -568,7 +569,11 @@ class BumbleBee(ApiaryBot):
 
                 socket.setdefaulttimeout(30)
                 c = self.apiary_wiki.call({'action': 'edit', 'title': datapage, 'text': template_block, 'token': self.edit_token, 'bot': 'true'})
+                if self.args.verbose >= 4:
+                    print template_block
+                    print datapage
                 if self.args.verbose >= 3:
+                    print "Edited page, result below"
                     print c
                 self.stats['general'] += 1
             else:
@@ -589,8 +594,10 @@ class BumbleBee(ApiaryBot):
     def record_whois(self, site):
         # Now that we successfully got the data, we can make a quick query to get the server info
         hostname = urlparse.urlparse(site['Has API URL']).hostname
-        addr = socket.gethostbyname(hostname)
-
+        try:
+            addr = socket.gethostbyname(hostname)
+        except:
+            return None
         datapage = "%s/Whois" % site['pagename']
         template_block = "<noinclude>{{Whois subpage}}</noinclude><includeonly>"
         template_block += "{{Whois\n"
@@ -621,7 +628,11 @@ class BumbleBee(ApiaryBot):
 
         socket.setdefaulttimeout(30)
         c = self.apiary_wiki.call({'action': 'edit', 'title': datapage, 'text': template_block, 'token': self.edit_token, 'bot': 'true'})
+        if self.args.verbose >= 4:
+            print template_block
+            print datapage
         if self.args.verbose >= 3:
+            print "Edited page, result below"
             print c
         self.stats['whois'] += 1
 
@@ -634,7 +645,11 @@ class BumbleBee(ApiaryBot):
 
         socket.setdefaulttimeout(30)
         c = self.apiary_wiki.call({'action': 'edit', 'title': datapage, 'text': template_block, 'token': self.edit_token, 'bot': 'true'})
+        if self.args.verbose >= 4:
+            print template_block
+            print datapage
         if self.args.verbose >= 3:
+            print "Edited page, result below"
             print c
         self.stats['maxmind'] += 1
 
@@ -773,8 +788,12 @@ class BumbleBee(ApiaryBot):
                     template_block = self.build_libraries_template(data['query']['libraries'])
                     socket.setdefaulttimeout(30)
                     c = self.apiary_wiki.call({'action': 'edit', 'title': datapage, 'text': template_block, 'token': self.edit_token, 'bot': 'true'})
-                    if self.args.verbose >= 3:
-                        print c
+                if self.args.verbose >= 4:
+                    print template_block
+                    print datapage
+                if self.args.verbose >= 3:
+                    print "Edited page, result below"
+                    print c
                     # self.stats['libraries'] += 1
 
             else:
@@ -804,8 +823,12 @@ class BumbleBee(ApiaryBot):
                     template_block = self.build_extensions_template(data['query']['extensions'])
                     socket.setdefaulttimeout(30)
                     c = self.apiary_wiki.call({'action': 'edit', 'title': datapage, 'text': template_block, 'token': self.edit_token, 'bot': 'true'})
-                    if self.args.verbose >= 3:
-                        print c
+                if self.args.verbose >= 4:
+                    print template_block
+                    print datapage
+                if self.args.verbose >= 3:
+                    print "Edited page, result below"
+                    print c
                     self.stats['extensions'] += 1
 
             else:
@@ -885,7 +908,11 @@ class BumbleBee(ApiaryBot):
                 template_block = self.build_skins_template(data['query']['skins'])
                 socket.setdefaulttimeout(30)
                 c = self.apiary_wiki.call({'action': 'edit', 'title': datapage, 'text': template_block, 'token': self.edit_token, 'bot': 'true'})
+                if self.args.verbose >= 4:
+                    print template_block
+                    print datapage
                 if self.args.verbose >= 3:
+                    print "Edited page, result below"
                     print c
                 self.stats['skins'] += 1
             else:
@@ -956,7 +983,11 @@ class BumbleBee(ApiaryBot):
                 template_block = self.build_interwikimap_template(data['query']['interwikimap'])
                 socket.setdefaulttimeout(30)
                 c = self.apiary_wiki.call({'action': 'edit', 'title': datapage, 'text': template_block, 'token': self.edit_token, 'bot': 'true'})
+                if self.args.verbose >= 4:
+                    print template_block
+                    print datapage
                 if self.args.verbose >= 3:
+                    print "Edited page, result below"
                     print c
                 self.stats['interwikimap'] += 1
             else:
@@ -1022,7 +1053,11 @@ class BumbleBee(ApiaryBot):
                 template_block = self.build_namespaces_template(data['query']['namespaces'])
                 socket.setdefaulttimeout(30)
                 c = self.apiary_wiki.call({'action': 'edit', 'title': datapage, 'text': template_block, 'token': self.edit_token, 'bot': 'true'})
+                if self.args.verbose >= 4:
+                    print template_block
+                    print datapage
                 if self.args.verbose >= 3:
+                    print "Edited page, result below"
                     print c
                 self.stats['namespaces'] += 1
             else:
@@ -1068,25 +1103,25 @@ class BumbleBee(ApiaryBot):
                 (req_statistics, req_general) = self.get_status(site)
 
             # Put this section in a try/catch so that we can proceed even if a single site causes a problem
-            try:
-                process = "unknown"
-                if req_statistics:
-                    if site['Collect statistics']:
-                        process = "collect statistics (API)"
-                        status = self.record_statistics(site, 'API')
-                    if site['Collect statistics stats']:
-                        process = "collect statistics (Statistics)"
-                        status = self.record_statistics(site, 'Statistics')
-                    if site['Collect semantic statistics']:
-                        process = "collect semantic statistics"
-                        status = self.record_smwinfo(site)
-                    if site['Collect semantic usage']:
-                        process = "collect semantic usage"
-                        status = self.record_smwusage(site)
-                if req_general:
-                    time.sleep(2)  # TODO: this is dumb, doing to not trigger a problem with update_status again due to no rows being modified if the timestamp is the same. Forcing the timestamp to be +1 second
-                    self.record_whois(site)
-                    self.record_maxmind(site)
+            #try:
+            process = "unknown"
+            if req_statistics:
+                if site['Collect statistics']:
+                    process = "collect statistics (API)"
+                    status = self.record_statistics(site, 'API')
+                if site['Collect statistics stats']:
+                    process = "collect statistics (Statistics)"
+                    status = self.record_statistics(site, 'Statistics')
+                if site['Collect semantic statistics']:
+                    process = "collect semantic statistics"
+                    status = self.record_smwinfo(site)
+                if site['Collect semantic usage']:
+                    process = "collect semantic usage"
+                    status = self.record_smwusage(site)
+            if req_general:
+                time.sleep(2)  # TODO: this is dumb, doing to not trigger a problem with update_status again due to no rows being modified if the timestamp is the same. Forcing the timestamp to be +1 second
+                try:
+		    self.record_whois(site)
                     if site['Collect general data']:
                         process = "collect general data"
                         status = self.record_general(site)
@@ -1099,14 +1134,49 @@ class BumbleBee(ApiaryBot):
                     if site['Collect skin data']:
                         process = "collect skin data"
                         status = self.record_skins(site)
-            except Exception, e:
-                self.record_error(
-                    site=site,
-                    log_message='Unhandled exception %s during %s' % (str(e), process),
-                    log_type='error',
-                    log_severity='normal',
-                    log_bot='Bumble Bee'
-                )
+		except Exception, e:
+                    if 'data_url' in globals():
+                        self.record_error(
+                            site=site,
+                            log_message="%s" % e,
+                            log_type='error',
+                            log_severity='normal',
+                            log_bot='Bumble Bee',
+			    log_url=data_url
+		        )
+		    else:
+                        self.record_error(
+                            site=site,
+                            log_message="%s" % e,
+                            log_type='error',
+                            log_severity='normal',
+                            log_bot='Bumble Bee',
+			    log_url=None
+                        )
+		status = False
+		#self.record_maxmind(site)
+#                if site['Collect general data']:
+#                    process = "collect general data"
+#                    status = self.record_general(site)
+#                if site['Collect extension data']:
+ #                   process = "collect extension data"
+ #                   status = self.record_extensions(site)
+ #                   status = self.record_libraries(site)
+ #                   status = self.record_interwikimap(site)
+ #                   status = self.record_namespaces(site)
+ #               if site['Collect skin data']:
+ #                   process = "collect skin data"
+ #                   status = self.record_skins(site)
+            if self.args.verbose >= 4:
+                print "☃☃☃☃ Finished this step of the process: %s" % (process)
+            #except Exception, e:
+            #    self.record_error(
+            #        site=site,
+            #        log_message='Unhandled exception %s during %s' % (str(e), process),
+            #        log_type='error',
+            #        log_severity='normal',
+            #        log_bot='Bumble Bee'
+            #    )
 
         duration = time.time() - start_time
         if self.args.segment is not None:

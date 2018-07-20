@@ -16,13 +16,17 @@ import ConfigParser
 import argparse
 import socket
 import MySQLdb as mdb
-import simplejson
+import json as simplejson
 import urllib2
 import random
 import re
+from pprint import pprint
 from urllib2 import Request, urlopen, URLError, HTTPError
 from simplemediawiki import MediaWiki
 
+def list_get(L, i, v=False):
+    try: return L[i][0]
+    except IndexError: return v
 
 class ApiaryBot:
 
@@ -53,6 +57,7 @@ class ApiaryBot:
         self.stats['maxmind'] = 0
         self.stats['interwikimap'] = 0
         self.stats['namespaces'] = 0
+
 
     def get_config(self, config_file='../apiary.cfg'):
         try:
@@ -100,7 +105,7 @@ class ApiaryBot:
             msg = str(e)
             p = re.compile('hostname \'([^\']+)\' doesn.t match either of')
             m = p.match( msg )
-            if m.group(1) is not None:
+            if m is not None and m.group(1) is not None:
                 msg = "Invalid SSL cert for domain name: " + m.group(1)
 
             self.record_error(
@@ -211,8 +216,7 @@ class ApiaryBot:
             'Website[Error]': 'No',
             'wpSummary': 'clearing error'})
         if self.args.verbose >= 3:
-            print c
-
+            print "result:%s"%c
     def connectdb(self):
         # Setup our database connection
         # Use the account that can also insert and delete from the database
@@ -224,16 +228,11 @@ class ApiaryBot:
             charset='utf8')
 
     def connectwiki(self, bot_name):
-        self.apiary_wiki = MediaWiki(self.config.get('WikiApiary', 'API'))
-        try:
-            c = self.apiary_wiki.login(self.config.get(bot_name, 'Username'), self.config.get(bot_name, 'Password'))
-        except Exception, e:
-            print "Couldn't connect: %s" % str(e)
-            print "QUITTING"
-            sys.exit()
-        if self.args.verbose >= 1:
+	self.apiary_wiki = MediaWiki(self.config.get('WikiApiary', 'API'))
+        c = self.apiary_wiki.login(self.config.get(bot_name, 'Username'), self.config.get(bot_name, 'Password'))
+	if self.args.verbose >= 1:
             print "Username: %s Password: %s" % (self.config.get(bot_name, 'Username'), self.config.get(bot_name, 'Password'))
-            print c
+	    print c
         # We need an edit token
         #c = self.apiary_wiki.call({'action': 'query', 'titles': 'Foo', 'prop': 'info', 'intoken': 'edit'})
         c = self.apiary_wiki.call({'action': 'query', 'meta': 'tokens'})
@@ -289,62 +288,18 @@ class ApiaryBot:
                 i += 1
                 if self.args.verbose >= 3:
                     print "[%d] Adding %s." % (i, pagename)
-
                 # Initialize the flags but do it carefully in case there is no value in the wiki yet
-                try:
-                    collect_general_data = (site['printouts']['Collect general data'][0] == "t")
-                except:
-                    collect_general_data = False
-
-                try:
-                    collect_extension_data = (site['printouts']['Collect extension data'][0] == "t")
-                except:
-                    collect_extension_data = False
-
-                try:
-                    collect_skin_data = (site['printouts']['Collect skin data'][0] == "t")
-                except:
-                    collect_skin_data = False
-
-                try:
-                    collect_statistics = (site['printouts']['Collect statistics'][0] == "t")
-                except:
-                    collect_statistics = False
-
-                try:
-                    collect_semantic_statistics = (site['printouts']['Collect semantic statistics'][0] == "t")
-                except:
-                    collect_semantic_statistics = False
-
-                try:
-                    collect_semantic_usage = (site['printouts']['Collect semantic usage'][0] == "t")
-                except:
-                    collect_semantic_usage = False
-
-                try:
-                    collect_statistics_stats = (site['printouts']['Collect statistics stats'][0] == "t")
-                except:
-                    collect_statistics_stats = False
-
-                try:
-                    collect_logs = (site['printouts']['Collect logs'][0] == "t")
-                except:
-                    collect_logs = False
-
-                try:
-                    collect_recent_changes = (site['printouts']['Collect recent changes'][0] == "t")
-                except:
-                    collect_recent_changes = False
-
-                try:
-                    has_statistics_url = site['printouts']['Has statistics URL'][0]
-                except:
-                    has_statistics_url = ''
-
-                try:
-                    has_api_url = site['printouts']['Has API URL'][0]
-                except:
-                    has_api_url = ''
+                collect_general_data = list_get(site['printouts'], 'Collect general data')== "t"
+                collect_extension_data = list_get(site['printouts'], 'Collect extension data') == "t"
+                collect_skin_data = list_get(site['printouts'], 'Collect skin data') == "t"
+                collect_statistics = list_get(site['printouts'], 'Collect statistics') == "t"
+                collect_semantic_statistics = list_get(site['printouts'], 'Collect semantic statistics') == "t"
+                collect_semantic_usage = list_get(site['printouts'], 'Collect semantic usage') == "t"
+                collect_statistics_stats = list_get(site['printouts'], 'Collect statistics stats') == "t"
+                collect_logs = list_get(site['printouts'], 'Collect logs') == "t"
+                collect_recent_changes = list_get(site['printouts'], 'Collect recent changes') == "t"
+                has_statistics_url = list_get(site['printouts'], 'Has statistics URL', '')
+                has_api_url = list_get(site['printouts'], 'Has API URL', '')
 
                 if has_statistics_url.find('wikkii.com') > 0:
                     # Temporary filter out all Farm:Wikkii sites
