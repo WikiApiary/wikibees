@@ -11,7 +11,7 @@ import ConfigParser
 import argparse
 import socket
 import MySQLdb as mdb
-import simplejson
+import json as simplejson
 import urllib2
 import string
 from urllib2 import Request, urlopen, URLError, HTTPError

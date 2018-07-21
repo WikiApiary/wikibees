@@ -10,7 +10,7 @@ import pytz
 import ConfigParser
 import argparse
 import socket
-import simplejson
+import json as simplejson
 from urllib2 import Request, urlopen, URLError, HTTPError
 from simplemediawiki import MediaWiki
 import re
