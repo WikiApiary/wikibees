@@ -1086,10 +1086,14 @@ class BumbleBee(ApiaryBot):
 
         # Setup our connection to the wiki too
 	try:
+            # Set bot name in case there is an error to record
+            site['bot_name'] = 'Bumble Bee'
+            site['pagename'] = '...connecting...'
+            site['Has ID'] = None
 	    self.connectwiki('Bumble Bee')
 	except Exception, e:
             self.record_error(
-                site=site,
+                site=site
                 log_message="%s" % e,
                 log_type='error',
                 log_severity='normal',
