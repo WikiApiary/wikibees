@@ -20,7 +20,6 @@ import re
 sys.path.append('../lib')
 from apiary import ApiaryBot
 
-
 class WorkerBee(ApiaryBot):
     def __init__(self):
         ApiaryBot.__init__(self)
@@ -173,13 +172,20 @@ WHERE log_date < DATE_SUB(NOW(), INTERVAL 4 WEEK)
         })
 
         for page in c['query']['categorymembers']:
-            print "Deleting %s (%d)..." % (page['title'], page['pageid'])
+            # This is logged elsewhere so this is disabled to reduce email spam
+	    #print "Deleting %s (%d)..." % (page['title'], page['pageid'])
 
-            d = self.apiary_wiki.call({
+            # Need a new token for every edit
+            d = self.apiary_wiki.call({'action': 'query', 'meta': 'tokens'})
+            self.edit_token = d['query']['tokens']['csrftoken']
+            if self.args.verbose >= 1:
+                print "Edit token: %s" % self.edit_token
+
+            e = self.apiary_wiki.call({
                 'action': 'delete',
                 'pageid': page['pageid'],
-                'reason': 'Orphaned',
-                'token': self.edit_token
+                'token': self.edit_token,
+                'reason': 'Orphaned'
                 })
 
     def main(self):
