@@ -67,10 +67,16 @@ class AuditBee(ApiaryBot):
                 match = re.search(r'(\d+)\.(\d+)', extension['version'])
                 (smw_version_major, smw_version_minor) = (int(match.group(1)), int(match.group(2)))
 
-                if ((smw_version_major >= 1 and smw_version_minor >= 6) or smw_version_major >= 2) and site['Collect semantic statistics'] is False:
-                    self.set_flag(site['pagename'], 'Collect semantic statistics', 'Yes', "Enabling statistics collection for Semantic MediaWiki %d.%d." % (smw_version_major, smw_version_minor))
-                if (smw_version_major == 1 and smw_version_minor < 6) and site['Collect semantic statistics'] is True:
-                    self.set_flag(site['pagename'], 'Collect semantic statistics', 'No', "Statistics collection not supported for Semantic MediaWiki %d.%d." % (smw_version_major, smw_version_minor))
+                if ( ( (smw_version_major >= 1 and smw_version_minor >= 6) or smw_version_major >= 2)
+                     and site['Collect semantic statistics'] is False ):
+                    self.set_flag(site['pagename'], 'Collect semantic statistics', 'Yes',
+                                  ( "Enabling statistics collection for Semantic MediaWiki %d.%d." %
+                                    (smw_version_major, smw_version_minor)))
+                if ( ( smw_version_major == 1 and smw_version_minor < 6) and
+                     site['Collect semantic statistics'] is True ):
+                    self.set_flag(site['pagename'], 'Collect semantic statistics', 'No',
+                                  ( "Statistics collection not supported for Semantic "
+                                    "MediaWiki %d.%d." % (smw_version_major, smw_version_minor)) )
 
     def set_audit(self, site, data):
         # Get the major and minor version numbers of MediaWiki
@@ -79,29 +85,51 @@ class AuditBee(ApiaryBot):
             (mw_version_major, mw_version_minor) = (int(match.group(1)), int(match.group(2)))
 
             if self.args.verbose >= 2:
-                print "Website: %s  Generator: %s  Major: %d  Minor: %d" % (site['pagename'], data['generator'], mw_version_major, mw_version_minor)
+                print ( "Website: %s  Generator: %s  Major: %d  Minor: %d" %
+                        (site['pagename'], data['generator'], mw_version_major, mw_version_minor) )
 
             # General data requires MediaWiki 1.8 or later.
-            if (mw_version_major >= 1) and (mw_version_minor >= 8) and (site['Collect general data'] is False):
-                self.set_flag(site['pagename'], 'Collect general data', 'Yes', "MediaWiki %d.%d supports general collection" % (mw_version_major, mw_version_minor))
+            if ( ( mw_version_major >= 1) and (mw_version_minor >= 8) and
+                 (site['Collect general data'] is False) ):
+                self.set_flag(site['pagename'], 'Collect general data', 'Yes',
+                              ( "MediaWiki %d.%d supports general collection"
+                                % (mw_version_major, mw_version_minor)) )
 
             # Extension data requires MediaWiki 1.14 or later.
-            if (mw_version_major >= 1) and (mw_version_minor >= 14) and (site['Collect extension data'] is False):
-                self.set_flag(site['pagename'], 'Collect extension data', 'Yes', "Enabling extension collection for MediaWiki %d.%d." % (mw_version_major, mw_version_minor))
-            if (mw_version_major >= 1) and (mw_version_minor < 14) and (site['Collect extension data'] is True):
-                self.set_flag(site['pagename'], 'Collect extension data', 'No', "Disabling extensions collection for MediaWiki %d.%d." % (mw_version_major, mw_version_minor))
+            if (( mw_version_major >= 1) and (mw_version_minor >= 14) and
+                (site['Collect extension data'] is False)):
+                self.set_flag(site['pagename'], 'Collect extension data', 'Yes',
+                              ( "Enabling extension collection for MediaWiki %d.%d." %
+                                (mw_version_major, mw_version_minor)))
+            if ((mw_version_major >= 1) and (mw_version_minor < 14) and
+                (site['Collect extension data'] is True)):
+                self.set_flag(site['pagename'], 'Collect extension data', 'No',
+                              ( "Disabling extensions collection for MediaWiki %d.%d." %
+                                (mw_version_major, mw_version_minor)) )
 
             # Skin data requires MediaWiki 1.18 or later.
-            if (mw_version_major >= 1) and (mw_version_minor >= 18) and (site['Collect skin data'] is False):
-                self.set_flag(site['pagename'], 'Collect skin data', 'Yes', "Enabling skin collection for MediaWiki %d.%d." % (mw_version_major, mw_version_minor))
-            if (mw_version_major >= 1) and (mw_version_minor < 18) and (site['Collect skin data'] is True):
-                self.set_flag(site['pagename'], 'Collect skin data', 'No', "Disabling skin collection for MediaWiki %d.%d." % (mw_version_major, mw_version_minor))
+            if (( mw_version_major >= 1) and (mw_version_minor >= 18) and
+                (site['Collect skin data'] is False) ):
+                self.set_flag(site['pagename'], 'Collect skin data', 'Yes',
+                              ( "Enabling skin collection for MediaWiki %d.%d." %
+                                (mw_version_major, mw_version_minor)))
+            if ((mw_version_major >= 1) and (mw_version_minor < 18) and
+                (site['Collect skin data'] is True)):
+                self.set_flag(site['pagename'], 'Collect skin data', 'No',
+                              ("Disabling skin collection for MediaWiki %d.%d." %
+                               (mw_version_major, mw_version_minor)))
 
             # General statistics requires MediaWiki 1.11 or later.
-            if (mw_version_major >= 1) and (mw_version_minor >= 11) and (site['Collect statistics'] is False):
-                self.set_flag(site['pagename'], 'Collect statistics', 'Yes', "Enabling statistics for MediaWiki %d.%d." % (mw_version_major, mw_version_minor))
-            if (mw_version_major >= 1) and (mw_version_minor < 11) and (site['Collect statistics'] is True):
-                self.set_flag(site['pagename'], 'Collect statistics', 'No', "Disabling statistics for MediaWiki %d.%d." % (mw_version_major, mw_version_minor))
+            if ((mw_version_major >= 1) and (mw_version_minor >= 11) and
+                (site['Collect statistics'] is False)):
+                self.set_flag(site['pagename'], 'Collect statistics', 'Yes',
+                              ( "Enabling statistics for MediaWiki %d.%d." %
+                                (mw_version_major, mw_version_minor)))
+            if ((mw_version_major >= 1) and (mw_version_minor < 11) and
+                (site['Collect statistics'] is True)):
+                self.set_flag(site['pagename'], 'Collect statistics', 'No',
+                              ( "Disabling statistics for MediaWiki %d.%d." %
+                                (mw_version_major, mw_version_minor)))
 
             # Return if extension data is available to check as well
             if (mw_version_major >= 1) and (mw_version_minor >= 14):
@@ -113,13 +141,13 @@ class AuditBee(ApiaryBot):
             # Unable to determine the version of MediaWiki. This is probably because the
             # wiki has been altered to hide its version.
             if self.args.verbose >= 2:
-                print "%s returnd version %s which cannot be parsed." % (site['pagename'], data['generator'])
+                print ("%s returnd version %s which cannot be parsed." %
+                       (site['pagename'], data['generator']))
             self.record_error(
                 site=site,
-                log_message="Unable to determine version from %s. Auditing without confirming any flags. Operator please check." % data['generator'],
-                log_type='info',
-                log_severity='normal',
-                log_bot='Audit Bee'
+                log_message= ( "Unable to determine version from %s. Auditing without confirming "
+                               "any flags. Operator please check." % data['generator'] ),
+                log_type='info', log_severity='normal', log_bot='Audit Bee'
             )
             return False
 
@@ -143,7 +171,8 @@ class AuditBee(ApiaryBot):
                 if 'code' in data['error']:
                     if data['error']['code'] == 'readapidenied':
                         # This website will not let us talk to it, defunct it.
-                        self.set_flag(site['pagename'], 'Defunct', 'Yes', 'Marking defunct because readapidenied')
+                        self.set_flag(site['pagename'], 'Defunct', 'Yes',
+                                      'Marking defunct because readapidenied')
                         self.record_error(
                             site=site,
                             log_message="readapidenied, marking defunct",
@@ -182,7 +211,8 @@ class AuditBee(ApiaryBot):
 
         # Pull extension information for audit too!
         if do_audit_extensions:
-            data_url = site['Has API URL'] + "?action=query&meta=siteinfo&siprop=extensions&format=json"
+            data_url = site['Has API URL'] + ( "?action=query&meta=siteinfo"
+                                               "&siprop=extensions&format=json" )
             if self.args.verbose >= 2:
                 print "Pulling extension info info from %s." % data_url
             (success, data, duration) = self.pull_json(site['pagename'], data_url, bot='Audit Bee')
@@ -224,14 +254,20 @@ class AuditBee(ApiaryBot):
 
             if (update_founded_date):
                 # ?action=query&prop=revisions&revids=1&rvprop=timestamp&format=json
-                first_date_url = site['Has API URL'] + "?action=query&prop=revisions&revids=1&rvprop=timestamp&format=json"
-                (success, first_change, duration) = self.pull_json(site, first_date_url, bot='Audit Bee')
+                first_date_url = site['Has API URL'] + ( "?action=query&prop=revisions&revids=1"
+                                                         "&rvprop=timestamp&format=json" )
+                (success, first_change, duration) = self.pull_json(site, first_date_url,
+                                                                   bot='Audit Bee')
                 if success:
                     try:
                         timestamp = first_change['query']['pages']['1']['revisions'][0]['timestamp']
                         # timestamp is ISO 8601 format
                         first_edit = dateutil.parser.parse(timestamp)
-                        self.set_flag(site['pagename'], 'Founded date', first_edit.strftime('%Y/%m/%d %I:%M:%S %p'), 'Setting founded date to timestamp of first edit')
+                        self.set_flag(
+                            site['pagename'], 'Founded date',
+                            first_edit.strftime('%Y/%m/%d %I:%M:%S %p'),
+                            'Setting founded date to timestamp of first edit'
+                        )
                     except:
                         self.record_error(
                             site=site,
@@ -295,10 +331,20 @@ class AuditBee(ApiaryBot):
             print "Query: %s" % my_query
 
         socket.setdefaulttimeout(30)
-        sites = self.apiary_wiki.call({
-            'action': 'ask',
-            'query': my_query
-        })
+	try:
+            sites = self.apiary_wiki.call({
+                'action': 'ask',
+                'query': my_query
+            })
+	except Exception, e:
+	    self.record_error(
+                site="Wikiapiary",
+                log_message="Problem querying Wikiapiary: %s" % e,
+                log_type='error',
+                log_severity='important',
+                log_bot='Audit Bee'
+            )
+
 
         my_sites = []
         if len(sites['query']['results']) > 0:
@@ -328,7 +374,8 @@ class AuditBee(ApiaryBot):
                     collect_statistics = False
 
                 try:
-                    collect_semantic_statistics = (site['printouts']['Collect semantic statistics'][0] == "t")
+                    collect_semantic_statistics = (site['printouts']['Collect semantic statistics'][0]
+                                                   == "t")
                 except:
                     collect_semantic_statistics = False
 
@@ -338,7 +385,8 @@ class AuditBee(ApiaryBot):
                     collect_semantic_usage = False
 
                 try:
-                    collect_statistics_stats = (site['printouts']['Collect statistics stats'][0] == "t")
+                    collect_statistics_stats = (site['printouts']['Collect statistics stats'][0]
+                                                == "t")
                 except:
                     collect_statistics_stats = False
 
@@ -393,7 +441,16 @@ class AuditBee(ApiaryBot):
         start_time = time.time()
 
         # Setup our connection to the wiki too
-        self.connectwiki('Audit Bee')
+        try:
+            self.connectwiki('Audit Bee')
+        except Exception, e:
+	    self.record_error(
+                log_message="Problem connecting to Wikiapiary: %s" % e,
+                log_type='error',
+                log_severity='important',
+                log_bot='Audit Bee'
+            )
+            return
 
         # Do never audited first
         sites = self.get_audit_list(group='Websites never audited', count=20)
@@ -429,7 +486,9 @@ class AuditBee(ApiaryBot):
 
         duration = time.time() - start_time
         if self.stats['audit_count'] > 0:
-            message = "Completed audit %d sites  %d succeeded  %d failed" % (self.stats['audit_count'], self.stats['audit_success'], self.stats['audit_failure'])
+            message = ( "Completed audit %d sites  %d succeeded  %d failed" %
+                        (self.stats['audit_count'], self.stats['audit_success'],
+                         self.stats['audit_failure']) )
             self.botlog(bot='Audit Bee', duration=float(duration), message=message)
 
 

@@ -1076,30 +1076,35 @@ class BumbleBee(ApiaryBot):
         if self.args.site is not None:
             message = "Starting processing for site %d." % int(self.args.site)
         elif self.args.segment is not None:
-            message = "Starting processing for segement %d." % int(self.args.segment)
-        else:
+            message = "Starting processing for segment %d." % int(self.args.segment)
+            #message = "test"
+	else:
             message = "Starting processing for all websites."
         self.botlog(bot='Bumble Bee', message=message)
 
         # Record time at beginning
         start_time = time.time()
 
+        # Set bot name in case there is an error to record
+        site = {}
+        site['bot_name'] = 'Bumble Bee'
+        site['pagename'] = '...connecting...'
+        site['Has ID'] = 18
+
         # Setup our connection to the wiki too
 	try:
-            # Set bot name in case there is an error to record
-            site['bot_name'] = 'Bumble Bee'
-            site['pagename'] = '...connecting...'
-            site['Has ID'] = None
 	    self.connectwiki('Bumble Bee')
 	except Exception, e:
             self.record_error(
-                site=site
+                site=site,
                 log_message="%s" % e,
                 log_type='error',
                 log_severity='normal',
                 log_bot='Bumble Bee',
 	        log_url=None
 	    )
+            return
+
         # Get list of websites to work on
         sites = self.get_websites(self.args.segment, self.args.site)
 
@@ -1116,24 +1121,27 @@ class BumbleBee(ApiaryBot):
                 (req_statistics, req_general) = self.get_status(site)
 
             # Put this section in a try/catch so that we can proceed even if a single site causes a problem
-            #try:
-            process = "unknown"
-            if req_statistics:
-                if site['Collect statistics']:
-                    process = "collect statistics (API)"
-                    status = self.record_statistics(site, 'API')
-                if site['Collect statistics stats']:
-                    process = "collect statistics (Statistics)"
-                    status = self.record_statistics(site, 'Statistics')
-                if site['Collect semantic statistics']:
-                    process = "collect semantic statistics"
-                    status = self.record_smwinfo(site)
-                if site['Collect semantic usage']:
-                    process = "collect semantic usage"
-                    status = self.record_smwusage(site)
-            if req_general:
-                time.sleep(2)  # TODO: this is dumb, doing to not trigger a problem with update_status again due to no rows being modified if the timestamp is the same. Forcing the timestamp to be +1 second
-                try:
+            try:
+                process = "unknown"
+                if req_statistics:
+                    if site['Collect statistics']:
+                        process = "collect statistics (API)"
+                        status = self.record_statistics(site, 'API')
+                    if site['Collect statistics stats']:
+                        process = "collect statistics (Statistics)"
+                        status = self.record_statistics(site, 'Statistics')
+                    if site['Collect semantic statistics']:
+                        process = "collect semantic statistics"
+                        status = self.record_smwinfo(site)
+                    if site['Collect semantic usage']:
+                        process = "collect semantic usage"
+                        status = self.record_smwusage(site)
+                if req_general:
+                    # TODO: this is dumb, doing to not trigger a
+                    # problem with update_status again due to no rows
+                    # being modified if the timestamp is the
+                    # same. Forcing the timestamp to be +1 second
+                    time.sleep(2)
 		    self.record_whois(site)
                     if site['Collect general data']:
                         process = "collect general data"
@@ -1147,49 +1155,28 @@ class BumbleBee(ApiaryBot):
                     if site['Collect skin data']:
                         process = "collect skin data"
                         status = self.record_skins(site)
-		except Exception, e:
-                    if 'data_url' in globals():
-                        self.record_error(
-                            site=site,
-                            log_message="%s" % e,
-                            log_type='error',
-                            log_severity='normal',
-                            log_bot='Bumble Bee',
-			    log_url=data_url
-		        )
-		    else:
-                        self.record_error(
-                            site=site,
-                            log_message="%s" % e,
-                            log_type='error',
-                            log_severity='normal',
-                            log_bot='Bumble Bee',
-			    log_url=None
-                        )
-		status = False
-		#self.record_maxmind(site)
-#                if site['Collect general data']:
-#                    process = "collect general data"
-#                    status = self.record_general(site)
-#                if site['Collect extension data']:
- #                   process = "collect extension data"
- #                   status = self.record_extensions(site)
- #                   status = self.record_libraries(site)
- #                   status = self.record_interwikimap(site)
- #                   status = self.record_namespaces(site)
- #               if site['Collect skin data']:
- #                   process = "collect skin data"
- #                   status = self.record_skins(site)
-            if self.args.verbose >= 4:
-                print "☃☃☃☃ Finished this step of the process: %s" % (process)
-            #except Exception, e:
-            #    self.record_error(
-            #        site=site,
-            #        log_message='Unhandled exception %s during %s' % (str(e), process),
-            #        log_type='error',
-            #        log_severity='normal',
-            #        log_bot='Bumble Bee'
-            #    )
+                    if site['Collect general data']:
+                        process = "collect general data"
+                        status = self.record_general(site)
+                    if site['Collect extension data']:
+                        process = "collect extension data"
+                        status = self.record_extensions(site)
+                        status = self.record_libraries(site)
+                        status = self.record_interwikimap(site)
+                        status = self.record_namespaces(site)
+                    if site['Collect skin data']:
+                        process = "collect skin data"
+                        status = self.record_skins(site)
+                if self.args.verbose >= 4:
+                    print "☃☃☃☃ Finished this step of the process: %s" % (process)
+            except Exception, e:
+               self.record_error(
+                   site=site,
+                   log_message='Unhandled exception %s during %s' % (str(e), process),
+                   log_type='error',
+                   log_severity='normal',
+                   log_bot='Bumble Bee'
+               )
 
         duration = time.time() - start_time
         if self.args.segment is not None:

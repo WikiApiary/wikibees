@@ -17,6 +17,7 @@ import argparse
 import socket
 import MySQLdb as mdb
 import json as simplejson
+import urllib
 import urllib2
 import random
 import re
@@ -156,6 +157,9 @@ class ApiaryBot:
             print "SQL: %s" % sql_command
         try:
             cur = self.apiary_db.cursor()
+	    cur.execute('SET NAMES utf8mb4')
+	    cur.execute("SET CHARACTER SET utf8mb4")
+	    cur.execute("SET character_set_connection=utf8mb4")
             cur.execute(sql_command, args)
             cur.close()
             self.apiary_db.commit()
@@ -236,8 +240,8 @@ class ApiaryBot:
         # We need an edit token
         #c = self.apiary_wiki.call({'action': 'query', 'titles': 'Foo', 'prop': 'info', 'intoken': 'edit'})
         c = self.apiary_wiki.call({'action': 'query', 'meta': 'tokens'})
-        self.edit_token = c['query']['tokens']['csrftoken']
-        if self.args.verbose >= 1:
+        self.edit_token = urllib.quote_plus(c['query']['tokens']['csrftoken'])
+	if self.args.verbose >= 1:
             print "Edit token: %s" % self.edit_token
 
     def get_websites(self, segment, site):
@@ -250,6 +254,7 @@ class ApiaryBot:
             if self.args.verbose >= 1:
                 print "Only retrieving segment %d." % int(self.args.segment)
             filter_string = "[[Has bot segment::%d]]" % int(self.args.segment)
+	    #filter_string = "test"
 
         # Build query for sites
         my_query = ''.join([
@@ -276,7 +281,14 @@ class ApiaryBot:
             '|limit=2000'])
         if self.args.verbose >= 3:
             print "Query: %s" % my_query
-        sites = self.apiary_wiki.call({'action': 'ask', 'query': my_query})
+	try:
+            sites = self.apiary_wiki.call({'action': 'ask', 'query': my_query})
+	except Exception, e:
+            self.record_error(
+                log_message="Problem querying Wikiapiary: %s" % e,
+                log_type='error',
+                log_severity='important',
+            )
 
         # We could just return the raw JSON object from the API, however instead we are going to clean it up into an
         # easier to deal with array of dictionary objects.
@@ -410,7 +422,8 @@ class ApiaryBot:
             if self.args.verbose >= 2:
                 print "No website_status record exists for ID %d, creating one" % site['Has ID']
             temp_sql = "INSERT website_status (website_id, last_statistics, last_general, check_every_limit) "
-            temp_sql += "VALUES (%d, \"%s\", \"%s\", %d)" % (site['Has ID'], my_now, my_now, 240)
+            temp_sql += "VALUES (%d, \"%s\", \"%s\", %d) " % (site['Has ID'], my_now, my_now, 240)
+            temp_sql += "ON DUPLICATE KEY UPDATE last_statistics=\"%s\", last_general=\"%s\", check_every_limit=%d" % (my_now, my_now, 240)
             self.runSql(temp_sql)
 
     def botlog(self, bot, message, type='info', duration=0):
