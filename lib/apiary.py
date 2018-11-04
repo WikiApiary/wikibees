@@ -184,7 +184,6 @@ class ApiaryBot:
         if site is None:
 	    site['pagename'] = 'Error';
 	    site['Has ID'] = 0;
-	    site=site;
 
         if log_bot is None:
             log_bot = "null"
