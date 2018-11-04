@@ -170,7 +170,7 @@ class ApiaryBot:
             print "Exception: %s" % e
             return False, 0
 
-    def record_error(self, site=None, log_message, log_type='info', log_severity='normal', log_bot=None, log_url=None):
+    def record_error(self, site=None, log_message='Unknown Error', log_type='info', log_severity='normal', log_bot=None, log_url=None):
         if 'pagename' not in site:
             if 'Has name' in site:
                 site['pagename'] = site['Has name']
