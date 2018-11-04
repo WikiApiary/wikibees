@@ -287,7 +287,7 @@ class ApiaryBot:
             self.record_error(
                 log_message="Problem querying Wikiapiary: %s" % e,
                 log_type='error',
-                log_severity='important',
+                log_severity='important'
             )
 
         # We could just return the raw JSON object from the API, however instead we are going to clean it up into an

@@ -461,7 +461,6 @@ class AuditBee(ApiaryBot):
                     self.audit_site(site)
                 except Exception, e:
                     self.record_error(
-                        site=site,
                         log_message="Unhandled exception %s." % e,
                         log_type='error',
                         log_severity='important',
