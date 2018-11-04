@@ -181,6 +181,11 @@ class ApiaryBot:
         if self.args.verbose >= 1:
             print log_message
 
+        if site is None:
+	    site = "null"
+	else:
+	    site= "'%s'" % site
+
         if log_bot is None:
             log_bot = "null"
         else:
