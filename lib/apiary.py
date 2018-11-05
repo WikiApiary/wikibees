@@ -180,7 +180,7 @@ class ApiaryBot:
 
         if site is None:
             if 'Has name' in site:
-                site['pagename'] = site['Has name']:
+                site['pagename'] = site['Has name'];
 	    else:
 	        site['pagename'] = 'Error';
 	    site['Has ID'] = 0;
