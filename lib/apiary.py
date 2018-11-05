@@ -179,11 +179,11 @@ class ApiaryBot:
             print log_message
 
         if site is None:
+	    site['Has ID'] = 0;
             if 'Has name' in site:
                 site['pagename'] = site['Has name'];
 	    else:
 	        site['pagename'] = 'Error';
-	    site['Has ID'] = 0;
 
         if log_bot is None:
             log_bot = "null"
