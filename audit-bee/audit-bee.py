@@ -337,10 +337,7 @@ class AuditBee(ApiaryBot):
                 'query': my_query
             })
 	except Exception, e:
-	    site['pagename'] = 'Error';
-	    site['Has ID'] = 0;
 	    self.record_error(
-                site=site,
                 log_message="Problem querying Wikiapiary: %s" % e,
                 log_type='error',
                 log_severity='important',

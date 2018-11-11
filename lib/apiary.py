@@ -179,6 +179,7 @@ class ApiaryBot:
             print log_message
 
         if site is None:
+	    site = {};
             site = {'Has ID': 0};
             if 'Has name' in site:
                 site['pagename'] = site['Has name'];
@@ -293,61 +294,61 @@ class ApiaryBot:
                 log_type='error',
                 log_severity='important'
             )
-
+	else:
         # We could just return the raw JSON object from the API, however instead we are going to clean it up into an
         # easier to deal with array of dictionary objects.
         # To keep things sensible, we'll use the same name as the properties
-        i = 0
-        if len(sites['query']['results']) > 0:
-            my_sites = []
-            for pagename, site in sites['query']['results'].items():
-                i += 1
-                if self.args.verbose >= 3:
-                    print "[%d] Adding %s." % (i, pagename)
-                # Initialize the flags but do it carefully in case there is no value in the wiki yet
-                collect_general_data = list_get(site['printouts'], 'Collect general data')== "t"
-                collect_extension_data = list_get(site['printouts'], 'Collect extension data') == "t"
-                collect_skin_data = list_get(site['printouts'], 'Collect skin data') == "t"
-                collect_statistics = list_get(site['printouts'], 'Collect statistics') == "t"
-                collect_semantic_statistics = list_get(site['printouts'], 'Collect semantic statistics') == "t"
-                collect_semantic_usage = list_get(site['printouts'], 'Collect semantic usage') == "t"
-                collect_statistics_stats = list_get(site['printouts'], 'Collect statistics stats') == "t"
-                collect_logs = list_get(site['printouts'], 'Collect logs') == "t"
-                collect_recent_changes = list_get(site['printouts'], 'Collect recent changes') == "t"
-                has_statistics_url = list_get(site['printouts'], 'Has statistics URL', '')
-                has_api_url = list_get(site['printouts'], 'Has API URL', '')
+	        i = 0
+        	if len(sites['query']['results']) > 0:
+ 		   			my_sites = []
+            	for pagename, site in sites['query']['results'].items():
+                	i += 1
+                	if self.args.verbose >= 3:
+	                    	print "[%d] Adding %s." % (i, pagename)
+                	# Initialize the flags but do it carefully in case there is no value in the wiki yet
+                	collect_general_data = list_get(site['printouts'], 'Collect general data')== "t"
+                	collect_extension_data = list_get(site['printouts'], 'Collect extension data') == "t"
+                	collect_skin_data = list_get(site['printouts'], 'Collect skin data') == "t"
+                	collect_statistics = list_get(site['printouts'], 'Collect statistics') == "t"
+                	collect_semantic_statistics = list_get(site['printouts'], 'Collect semantic statistics') == "t"
+                	collect_semantic_usage = list_get(site['printouts'], 'Collect semantic usage') == "t"
+                	collect_statistics_stats = list_get(site['printouts'], 'Collect statistics stats') == "t"
+                	collect_logs = list_get(site['printouts'], 'Collect logs') == "t"
+                	collect_recent_changes = list_get(site['printouts'], 'Collect recent changes') == "t"
+                	has_statistics_url = list_get(site['printouts'], 'Has statistics URL', '')
+                	has_api_url = list_get(site['printouts'], 'Has API URL', '')
 
-                if has_statistics_url.find('wikkii.com') > 0:
-                    # Temporary filter out all Farm:Wikkii sites
-                    if self.args.verbose >= 2:
-                        print "Skipping %s (%s)" % (pagename, site['fullurl'])
-                else:
-                    try:
-                        my_sites.append({
-                            'pagename': pagename,
-                            'fullurl': site['fullurl'],
-                            'Has API URL': has_api_url,
-                            'Has statistics URL': has_statistics_url,
-                            'Check every': int(site['printouts']['Check every'][0]),
-                            'Creation date': site['printouts']['Creation date'][0],
-                            'Has ID': int(site['printouts']['Has ID'][0]),
-                            'Collect general data': collect_general_data,
-                            'Collect extension data': collect_extension_data,
-                            'Collect skin data': collect_skin_data,
-                            'Collect statistics': collect_statistics,
-                            'Collect semantic statistics': collect_semantic_statistics,
-                            'Collect semantic usage': collect_semantic_usage,
-                            'Collect statistics stats': collect_statistics_stats,
-                            'Collect logs': collect_logs,
-                            'Collect recent changes': collect_recent_changes
-                        })
-                    except Exception, e:
-                        print "Failed to add %s" % pagename
-                        print e
+                	if has_statistics_url.find('wikkii.com') > 0:
+    	                	# Temporary filter out all Farm:Wikkii sites
+        	            	if self.args.verbose >= 2:
+            		            	print "Skipping %s (%s)" % (pagename, site['fullurl'])
+                	else:
+                    		try:
+                        		my_sites.append({
+                            		'pagename': pagename,
+                            		'fullurl': site['fullurl'],
+                            		'Has API URL': has_api_url,
+                            		'Has statistics URL': has_statistics_url,
+                            		'Check every': int(site['printouts']['Check every'][0]),
+                            		'Creation date': site['printouts']['Creation date'][0],
+                            		'Has ID': int(site['printouts']['Has ID'][0]),
+                            		'Collect general data': collect_general_data,
+                            		'Collect extension data': collect_extension_data,
+                            		'Collect skin data': collect_skin_data,
+                            		'Collect statistics': collect_statistics,
+                            		'Collect semantic statistics': collect_semantic_statistics,
+                            		'Collect semantic usage': collect_semantic_usage,
+                            		'Collect statistics stats': collect_statistics_stats,
+                            		'Collect logs': collect_logs,
+                            		'Collect recent changes': collect_recent_changes
+                        		})
+                    		except Exception, e:
+                        		print "Failed to add %s" % pagename
+                        		print e
 
-            return my_sites
-        else:
-            raise Exception("No sites were returned to work on.")
+            		return my_sites
+        	else:
+            		raise Exception("No sites were returned to work on.")
 
     def get_status(self, site):
         """
