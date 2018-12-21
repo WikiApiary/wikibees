@@ -183,7 +183,7 @@ class ApiaryBot:
 
 		if 'Has name' in site:
 			site['pagename'] = site['Has name'];
-		else:
+		elif 'pagename' not in site:
 			site['pagename'] = 'Error';
 
 		if log_bot is None:

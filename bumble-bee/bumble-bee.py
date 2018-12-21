@@ -1019,7 +1019,7 @@ class BumbleBee(ApiaryBot):
 			if 'query' in data:
 				datapage = "%s/Namespaces" % site['pagename']
 				template_block = self.build_namespaces_template(data['query']['namespaces'])
-				self(datapage, template_block)
+				self.edit_page(datapage, template_block)
 			else:
 				self.record_error(
 					site=site,
