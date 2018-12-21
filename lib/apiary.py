@@ -56,6 +56,7 @@ class ApiaryBot:
 		self.stats['whois'] = 0
 		self.stats['maxmind'] = 0
 		self.stats['interwikimap'] = 0
+		self.stats['libraries'] = 0
 		self.stats['namespaces'] = 0
 
 
