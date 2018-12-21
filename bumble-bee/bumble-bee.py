@@ -36,11 +36,17 @@ from apiary import ApiaryBot
 from PyWhoisAPI import *
 import validators
 
+import traceback
 
 class BumbleBee(ApiaryBot):
 	"""Bot that collects statistics for sites."""
 
 	def edit_page(self, datapage, template_block):
+		if datapage[:6] is 'Error/':
+			if self.args.verbose >= 1:
+				print repr(traceback.format_stack())
+			return
+
 		socket.setdefaulttimeout(30)
 		# We need an edit token
 		#c = self.apiary_wiki.call({'action': 'query', 'titles': 'Foo', 'prop': 'info', 'intoken': 'edit'})
@@ -369,11 +375,11 @@ class BumbleBee(ApiaryBot):
 			if 'info' in data:
 				# Record the data received to the database
 				sql_command = """
-					INSERT INTO smwinfo
-						(website_id, capture_date, response_timer, propcount, proppagecount, usedpropcount, declaredpropcount,
-							querycount, querysize, conceptcount, subobjectcount, errorcount)
-					VALUES
-						(%d, '%s', %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+				    INSERT INTO smwinfo (website_id, capture_date, response_timer,
+				                         propcount, proppagecount, usedpropcount,
+				                         declaredpropcount, querycount, querysize,
+					                     conceptcount, subobjectcount, errorcount) VALUES
+					(%d, '%s', %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
 					"""
 
 				if 'propcount' in data['info']:
@@ -450,10 +456,13 @@ class BumbleBee(ApiaryBot):
 				print "Did not receive valid data from %s" % (data_url)
 			ret_value = False
 
-		# Update the status table that we did our work!
-		# TODO: Commenting out. There is a bug that if this updates at the same time as the previous one
-		# there is no change to the row, and my check for rows_affected in update_status will
-		# not work as intended. Going to assume that smwinfo slaves off of regular statistics.
+		# Update the status table that we did our work!  TODO:
+		# Commenting out. There is a bug that if this updates at the
+		# same time as the previous one there is no change to the row,
+		# and my check for rows_affected in update_status will not
+		# work as intended. Going to assume that smwinfo slaves off of
+		# regular statistics.
+
 		#self.update_status(site, 'statistics')
 		return ret_value
 
@@ -615,21 +624,26 @@ class BumbleBee(ApiaryBot):
 
 		template_block += "|HTTP server=%s\n" % ('')
 		try:
-			template_block += "|IP address=%s\n" % (self.ProcessMultiprops(site['Has ID'], 'addr', addr))
+			template_block += "|IP address=%s\n" % (
+				self.ProcessMultiprops(site['Has ID'], 'addr', addr)
+			)
 		except:
 			pass
 
 		try:
 			reverse_host = socket.gethostbyaddr(addr)[0]
-			template_block += "|Reverse lookup=%s\n" % (self.ProcessMultiprops(site['Has ID'], 'reverse_host', reverse_host))
+			template_block += "|Reverse lookup=%s\n" % (
+				self.ProcessMultiprops(site['Has ID'], 'reverse_host', reverse_host)
+			)
 		except:
 			pass
 
 		# Now lets get the netblock information
 		try:
 			whois = Whois()
-			netblock_owner = whois.getNetworkRegistrationRelatedToIP(addr, format='json')['net']['orgRef']['@name']
-			netblock_owner_handle = whois.getNetworkRegistrationRelatedToIP(addr, format='json')['net']['orgRef']['@handle']
+			related = whois.getNetworkRegistrationRelatedToIP(addr, format='json')
+			netblock_owner = related['net']['orgRef']['@name']
+			netblock_owner_handle = related['net']['orgRef']['@handle']
 			template_block += "|Netblock organization=%s\n" % (netblock_owner)
 			template_block += "|Netblock organization handle=%s\n" % netblock_owner_handle
 		except:
@@ -676,19 +690,25 @@ class BumbleBee(ApiaryBot):
 						value = x[item]
 
 						if item == 'name':
-							# Sometimes people make the name of the extension a hyperlink using
-							# wikitext links and this makes things ugly. So, let's detect that if present.
+							# Sometimes people make the name of the
+							# extension a hyperlink using wikitext
+							# links and this makes things ugly. So,
+							# let's detect that if present.
 							if re.match(r'\[(http[^\s]+)\s+([^\]]+)\]', value):
 								(possible_url, value) = re.findall(r'\[(http[^\s]+)\s+([^\]]+)\]', value)[0]
-								# If a URL was given in the name, and not given as a formal part of the
-								# extension definition (yes, this happens) then add this to the template
-								# it is up to the template to decide what to do with this
+								# If a URL was given in the name, and
+								# not given as a formal part of the
+								# extension definition (yes, this
+								# happens) then add this to the
+								# template it is up to the template to
+								# decide what to do with this
 								template_block += "|URL Embedded in name=%s" % possible_url
 
 							value = self.filter_illegal_chars(value)
 							# Before unescaping 'regular' unicode characters, first deal with spaces
 							# because they cause problems when converted to unicode non-breaking spaces
-							value = value.replace('&nbsp;', ' ').replace('&#160;', ' ').replace('&160;', ' ')
+							value = value.replace('&nbsp;', ' ').replace('&#160;', ' ')
+							value = value.replace('&160;', ' ')
 							value = h.unescape(value)
 
 							if value.strip() == '':
@@ -733,7 +753,8 @@ class BumbleBee(ApiaryBot):
 								if re.match(r'^\/\/', value):
 									value = 'http:' + value
 								if validators.url(value) != True:
-									template_block += '|Remote error=\'%s\' is not a valid URL.\n' % value
+									template_block += '|Remote error=\'%s\'' % value
+									template_block += 'is not a valid URL.\n'
 									value = ""
 
 						template_block += "|%s=%s\n" % (name, value)
@@ -783,7 +804,6 @@ class BumbleBee(ApiaryBot):
 					template_block = self.build_libraries_template(data['query']['libraries'])
 					self.edit_page(datapage, template_block)
 					self.stats['libraries'] += 1
-
 			else:
 				self.record_error(
 					site=site,
@@ -877,7 +897,8 @@ class BumbleBee(ApiaryBot):
 		return template_block
 
 	def record_skins(self, site):
-		data_url = site['Has API URL'] + "?action=query&meta=siteinfo&siprop=skins&siinlanguagecode=en&format=json"
+		data_url = site['Has API URL'] + "?action=query&meta=siteinfo&siprop=skins"
+		data_url += "&siinlanguagecode=en&format=json"
 		if self.args.verbose >= 2:
 			print "Pulling skin info from %s." % data_url
 		(success, data, duration) = self.pull_json(site, data_url)
@@ -945,7 +966,8 @@ class BumbleBee(ApiaryBot):
 		return template_block
 
 	def record_interwikimap(self, site):
-		data_url = site['Has API URL'] + "?action=query&meta=siteinfo&siprop=interwikimap&siinlanguagecode=en&format=json"
+		data_url = site['Has API URL'] + "?action=query&meta=siteinfo&siprop=interwikimap"
+		data_url += "&siinlanguagecode=en&format=json"
 		if self.args.verbose >= 2:
 			print "Pulling interwikimap info from %s." % data_url
 		(success, data, duration) = self.pull_json(site, data_url)
@@ -992,7 +1014,8 @@ class BumbleBee(ApiaryBot):
 
 					if item == 'id':
 						if not isinstance(value, (int, long)):
-							template_block += '|Remote error=Namespace ID \'%s\' is not a number.\n' % value
+							template_block += '|Remote error=Namespace ID \'%s\'' % value
+							template_block += 'is not a number.\n'
 							value = ""
 
 					if item in ['subpages', 'content']:
@@ -1080,7 +1103,8 @@ class BumbleBee(ApiaryBot):
 			else:
 				(req_statistics, req_general) = self.get_status(site)
 
-			# Put this section in a try/catch so that we can proceed even if a single site causes a problem
+			# Put this section in a try/catch so that we can proceed
+			# even if a single site causes a problem
 			try:
 				process = "unknown"
 				if req_statistics:
@@ -1132,10 +1156,18 @@ class BumbleBee(ApiaryBot):
 		else:
 			message = "Completed processing for all websites."
 		message += " Processed %d websites." % i
-		message += " Counters statistics %d smwinfo %d smwusage %d general %d extensions %d skins %d skipped_stats: %d skipped_general: %d whois: %d maxmind: %d interwikimap: %d namespaces: %d" % (
-			self.stats['statistics'], self.stats['smwinfo'], self.stats['smwusage'], self.stats['general'],
-			self.stats['extensions'], self.stats['skins'], self.stats['skippedstatistics'], self.stats['skippedgeneral'],
-			self.stats['whois'], self.stats['maxmind'], self.stats['interwikimap'], self.stats['namespaces'])
+		message += " Counters statistics %d smwinfo %d smwusage %d general %d extensions %d " % (
+			self.stats['statistics'], self.stats['smwinfo'], self.stats['smwusage'],
+			self.stats['general'], self.stats['extensions']
+		)
+		message += "skins %d skipped_stats: %d skipped_general: %d whois: %d maxmind: %d " % (
+			self.stats['skins'], self.stats['skippedstatistics'], self.stats['skippedgeneral'],
+			self.stats['whois'], self.stats['maxmind']
+		)
+		message += "interwikimap: %d namespaces: %d libraries: %d" % (
+			self.stats['interwikimap'], self.stats['namespaces'],
+			self.stats['libraries']
+		)
 		self.botlog(bot='Bumble Bee', duration=float(duration), message=message)
 
 
