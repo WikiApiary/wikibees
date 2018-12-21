@@ -179,9 +179,10 @@ class ApiaryBot:
 
 		if site is None:
 			site = {};
-			site = {'Has ID': 0};
-			if 'Has name' in site:
-				site['pagename'] = site['Has name'];
+			site = {'Has ID': 0}
+
+		if 'Has name' in site:
+			site['pagename'] = site['Has name'];
 		else:
 			site['pagename'] = 'Error';
 
@@ -242,12 +243,6 @@ class ApiaryBot:
 		if self.args.verbose >= 1:
 			print "Username: %s Password: %s" % (self.config.get(bot_name, 'Username'), self.config.get(bot_name, 'Password'))
 			print c
-		# We need an edit token
-		#c = self.apiary_wiki.call({'action': 'query', 'titles': 'Foo', 'prop': 'info', 'intoken': 'edit'})
-		c = self.apiary_wiki.call({'action': 'query', 'meta': 'tokens'})
-		self.edit_token = urllib.quote_plus(c['query']['tokens']['csrftoken'])
-		if self.args.verbose >= 1:
-			print "Edit token: %s" % self.edit_token
 
 	def get_websites(self, segment, site):
 		filter_string = ""

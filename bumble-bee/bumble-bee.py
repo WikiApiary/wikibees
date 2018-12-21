@@ -40,8 +40,27 @@ import validators
 class BumbleBee(ApiaryBot):
 	"""Bot that collects statistics for sites."""
 
+	def edit_page(self, datapage, template_block):
+		socket.setdefaulttimeout(30)
+		# We need an edit token
+		#c = self.apiary_wiki.call({'action': 'query', 'titles': 'Foo', 'prop': 'info', 'intoken': 'edit'})
+		c = self.apiary_wiki.call({'action': 'query', 'meta': 'tokens'})
+		self.edit_token = c['query']['tokens']['csrftoken']
+		if self.args.verbose >= 1:
+			print "Edit token: %s" % self.edit_token
+
+		c = self.apiary_wiki.call({'action': 'edit', 'title': datapage, 'text': template_block, 'token': self.edit_token, 'bot': 'true'})
+		if self.args.verbose >= 4:
+			print template_block
+			print datapage
+		if self.args.verbose >= 3:
+			print "Edited page, result below"
+			print c
+
 	def parse_version(self, t):
 		ver = {}
+
+		t = str(t)
 
 		if self.args.verbose >= 3:
 			print "Getting version details for %s" % t
@@ -566,15 +585,7 @@ class BumbleBee(ApiaryBot):
 			if 'query' in data:
 				datapage = "%s/General" % site['pagename']
 				template_block = self.build_general_template(site['Has ID'], data['query']['general'])
-
-				socket.setdefaulttimeout(30)
-				c = self.apiary_wiki.call({'action': 'edit', 'title': datapage, 'text': template_block, 'token': self.edit_token, 'bot': 'true'})
-				if self.args.verbose >= 4:
-					print template_block
-					print datapage
-				if self.args.verbose >= 3:
-					print "Edited page, result below"
-					print c
+				self.edit_page(datapage, template_block)
 				self.stats['general'] += 1
 			else:
 				self.record_error(
@@ -625,15 +636,7 @@ class BumbleBee(ApiaryBot):
 			pass
 
 		template_block += "}}\n</includeonly>\n"
-
-		socket.setdefaulttimeout(30)
-		c = self.apiary_wiki.call({'action': 'edit', 'title': datapage, 'text': template_block, 'token': self.edit_token, 'bot': 'true'})
-		if self.args.verbose >= 4:
-			print template_block
-			print datapage
-		if self.args.verbose >= 3:
-			print "Edited page, result below"
-			print c
+		self.edit_page(datapage, template_block)
 		self.stats['whois'] += 1
 
 
@@ -642,15 +645,7 @@ class BumbleBee(ApiaryBot):
 		datapage = "%s/Maxmind" % site['pagename']
 		hostname = urlparse.urlparse(site['Has API URL']).hostname
 		template_block = self.BuildMaxmindTemplate(hostname)
-
-		socket.setdefaulttimeout(30)
-		c = self.apiary_wiki.call({'action': 'edit', 'title': datapage, 'text': template_block, 'token': self.edit_token, 'bot': 'true'})
-		if self.args.verbose >= 4:
-			print template_block
-			print datapage
-		if self.args.verbose >= 3:
-			print "Edited page, result below"
-			print c
+		self.edit_page(datapage, template_block)
 		self.stats['maxmind'] += 1
 
 
@@ -786,15 +781,8 @@ class BumbleBee(ApiaryBot):
 				if 'libraries' in data['query']:
 					datapage = "%s/Libraries" % site['pagename']
 					template_block = self.build_libraries_template(data['query']['libraries'])
-					socket.setdefaulttimeout(30)
-					c = self.apiary_wiki.call({'action': 'edit', 'title': datapage, 'text': template_block, 'token': self.edit_token, 'bot': 'true'})
-				if self.args.verbose >= 4:
-					print template_block
-					print datapage
-				if self.args.verbose >= 3:
-					print "Edited page, result below"
-					print c
-					# self.stats['libraries'] += 1
+					self.edit_page(datapage, template_block)
+					self.stats['libraries'] += 1
 
 			else:
 				self.record_error(
@@ -821,14 +809,7 @@ class BumbleBee(ApiaryBot):
 				if 'extensions' in data['query']:
 					datapage = "%s/Extensions" % site['pagename']
 					template_block = self.build_extensions_template(data['query']['extensions'])
-					socket.setdefaulttimeout(30)
-					c = self.apiary_wiki.call({'action': 'edit', 'title': datapage, 'text': template_block, 'token': self.edit_token, 'bot': 'true'})
-				if self.args.verbose >= 4:
-					print template_block
-					print datapage
-				if self.args.verbose >= 3:
-					print "Edited page, result below"
-					print c
+					self.edit_page(datapage, template_block)
 					self.stats['extensions'] += 1
 
 			else:
@@ -906,14 +887,7 @@ class BumbleBee(ApiaryBot):
 			if 'query' in data:
 				datapage = "%s/Skins" % site['pagename']
 				template_block = self.build_skins_template(data['query']['skins'])
-				socket.setdefaulttimeout(30)
-				c = self.apiary_wiki.call({'action': 'edit', 'title': datapage, 'text': template_block, 'token': self.edit_token, 'bot': 'true'})
-				if self.args.verbose >= 4:
-					print template_block
-					print datapage
-				if self.args.verbose >= 3:
-					print "Edited page, result below"
-					print c
+				self.edit_page(datapage, template_block)
 				self.stats['skins'] += 1
 			else:
 				self.record_error(
@@ -981,14 +955,8 @@ class BumbleBee(ApiaryBot):
 			if 'query' in data:
 				datapage = "%s/Interwikimap" % site['pagename']
 				template_block = self.build_interwikimap_template(data['query']['interwikimap'])
-				socket.setdefaulttimeout(30)
-				c = self.apiary_wiki.call({'action': 'edit', 'title': datapage, 'text': template_block, 'token': self.edit_token, 'bot': 'true'})
-				if self.args.verbose >= 4:
-					print template_block
-					print datapage
-				if self.args.verbose >= 3:
-					print "Edited page, result below"
-					print c
+
+				self.edit_page( datapage, template_block )
 				self.stats['interwikimap'] += 1
 			else:
 				self.record_error(
@@ -1051,15 +1019,7 @@ class BumbleBee(ApiaryBot):
 			if 'query' in data:
 				datapage = "%s/Namespaces" % site['pagename']
 				template_block = self.build_namespaces_template(data['query']['namespaces'])
-				socket.setdefaulttimeout(30)
-				c = self.apiary_wiki.call({'action': 'edit', 'title': datapage, 'text': template_block, 'token': self.edit_token, 'bot': 'true'})
-				if self.args.verbose >= 4:
-					print template_block
-					print datapage
-				if self.args.verbose >= 3:
-					print "Edited page, result below"
-					print c
-				self.stats['namespaces'] += 1
+				self(datapage, template_block)
 			else:
 				self.record_error(
 					site=site,
@@ -1078,7 +1038,7 @@ class BumbleBee(ApiaryBot):
 		elif self.args.segment is not None:
 			message = "Starting processing for segment %d." % int(self.args.segment)
 			#message = "test"
-	else:
+		else:
 			message = "Starting processing for all websites."
 		self.botlog(bot='Bumble Bee', message=message)
 
@@ -1092,17 +1052,17 @@ class BumbleBee(ApiaryBot):
 		site['Has ID'] = 18
 
 		# Setup our connection to the wiki too
-	try:
-		self.connectwiki('Bumble Bee')
-	except Exception, e:
+		try:
+			self.connectwiki('Bumble Bee')
+		except Exception, e:
 			self.record_error(
 				site=site,
 				log_message="%s" % e,
 				log_type='error',
 				log_severity='normal',
 				log_bot='Bumble Bee',
-			log_url=None
-		)
+				log_url=None
+			)
 			return
 
 		# Get list of websites to work on
@@ -1142,19 +1102,7 @@ class BumbleBee(ApiaryBot):
 					# being modified if the timestamp is the
 					# same. Forcing the timestamp to be +1 second
 					time.sleep(2)
-			self.record_whois(site)
-					if site['Collect general data']:
-						process = "collect general data"
-						status = self.record_general(site)
-					if site['Collect extension data']:
-						process = "collect extension data"
-						status = self.record_extensions(site)
-						status = self.record_libraries(site)
-						status = self.record_interwikimap(site)
-						status = self.record_namespaces(site)
-					if site['Collect skin data']:
-						process = "collect skin data"
-						status = self.record_skins(site)
+					self.record_whois(site)
 					if site['Collect general data']:
 						process = "collect general data"
 						status = self.record_general(site)
