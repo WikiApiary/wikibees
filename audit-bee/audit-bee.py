@@ -36,7 +36,7 @@ class AuditBee(ApiaryBot):
 
         socket.setdefaulttimeout(30)
         c = self.apiary_wiki.call({
-            'action': 'sfautoedit',
+            'action': 'pfautoedit',
             'form': 'Website',
             'target': pagename,
             'Website[Audited]': 'Yes',
@@ -52,7 +52,7 @@ class AuditBee(ApiaryBot):
         property = "Website[%s]" % name
         socket.setdefaulttimeout(30)
         c = self.apiary_wiki.call({
-            'action': 'sfautoedit',
+            'action': 'pfautoedit',
             'form': 'Website',
             'target': pagename,
             property: value,
