@@ -38,6 +38,14 @@ import validators
 
 import traceback
 
+class FourHundred(Exception):
+		"""So we can keep track of 4xx errors"""
+		pass
+
+class FiveHundred(Exception):
+		"""Server (5xx) errors"""
+		pass
+
 class BumbleBee(ApiaryBot):
 	"""Bot that collects statistics for sites."""
 
@@ -135,7 +143,21 @@ class BumbleBee(ApiaryBot):
 				t1 = datetime.datetime.now()
 				f = opener.open(req)
 				duration = (datetime.datetime.now() - t1).total_seconds()
-			except Exception as e:
+			except urllib2.URLError as e:
+				self.record_error(
+					site=site,
+					log_message="URLError: %s" % e,
+					log_type='error',
+					log_severity='normal',
+					log_bot='Bumble Bee',
+					log_url=data_url
+				)
+				status = False
+			except urllib2.HTTPError as e:
+				if e.code > 399 and e.code < 500:
+						raise FourHundred( e )
+				if e.code > 499 and e.code < 600:
+						raise FiveHundred( e )
 				self.record_error(
 					site=site,
 					log_message="%s" % e,
@@ -375,10 +397,10 @@ class BumbleBee(ApiaryBot):
 			if 'info' in data:
 				# Record the data received to the database
 				sql_command = """
-				    INSERT INTO smwinfo (website_id, capture_date, response_timer,
-				                         propcount, proppagecount, usedpropcount,
-				                         declaredpropcount, querycount, querysize,
-					                     conceptcount, subobjectcount, errorcount) VALUES
+					INSERT INTO smwinfo (website_id, capture_date, response_timer,
+										 propcount, proppagecount, usedpropcount,
+										 declaredpropcount, querycount, querysize,
+										 conceptcount, subobjectcount, errorcount) VALUES
 					(%d, '%s', %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
 					"""
 
@@ -586,7 +608,7 @@ class BumbleBee(ApiaryBot):
 	def record_general(self, site):
 		data_url = site['Has API URL'] + "?action=query&meta=siteinfo&siprop=general&format=json"
 		if self.args.verbose >= 2:
-			print "Pulling general info info from %s." % data_url
+			print "Pulling general info from %s." % data_url
 		(success, data, duration) = self.pull_json(site, data_url)
 		ret_value = True
 		if success:
@@ -1141,6 +1163,8 @@ class BumbleBee(ApiaryBot):
 						status = self.record_skins(site)
 				if self.args.verbose >= 4:
 					print "☃☃☃☃ Finished this step of the process: %s" % (process)
+			except (FiveHundred, FourHundred) as e:
+					pass
 			except Exception as e:
 				self.record_error(
 						site=site,
