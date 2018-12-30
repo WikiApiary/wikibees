@@ -32,19 +32,11 @@ import urlparse
 import pygeoip
 sys.path.append('../lib')
 from simplemediawiki import MediaWiki
-from apiary import ApiaryBot
+from apiary import ApiaryBot, FourHundred, FiveHundred, NoJSON
 from PyWhoisAPI import *
 import validators
 
 import traceback
-
-class FourHundred(Exception):
-		"""So we can keep track of 4xx errors"""
-		pass
-
-class FiveHundred(Exception):
-		"""Server (5xx) errors"""
-		pass
 
 class BumbleBee(ApiaryBot):
 	"""Bot that collects statistics for sites."""
@@ -1165,6 +1157,17 @@ class BumbleBee(ApiaryBot):
 					print "☃☃☃☃ Finished this step of the process: %s" % (process)
 			except (FiveHundred, FourHundred) as e:
 					pass
+			except NoJSON as e:
+					s = str(e)
+					ret = s.split('||')
+					self.record_error(
+							site=site,
+							log_message="Expected JSON, got '%s...'" % ret[1][:50],
+							log_type='info',
+							log_severity='normal',
+							log_bot='Bumble Bee',
+							log_url=ret[0]
+					)
 			except Exception as e:
 				self.record_error(
 						site=site,

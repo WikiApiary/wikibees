@@ -19,6 +19,7 @@ import MySQLdb as mdb
 import json as simplejson
 import urllib
 import urllib2
+import ssl
 import random
 import re
 from urllib2 import Request, urlopen, URLError, HTTPError
@@ -27,6 +28,19 @@ from simplemediawiki import MediaWiki
 def list_get(L, i, v=False):
 	try: return L[i][0]
 	except IndexError: return v
+
+
+class FourHundred(Exception):
+		"""So we can keep track of 4xx errors"""
+		pass
+
+class FiveHundred(Exception):
+		"""Server (5xx) errors"""
+		pass
+
+class NoJSON(Exception):
+		"""No JSON present"""
+		pass
 
 class ApiaryBot:
 
@@ -99,58 +113,45 @@ class ApiaryBot:
 		opener = urllib2.build_opener()
 
 		try:
-			t1 = datetime.datetime.now()
-			f = opener.open(req)
-			duration = (datetime.datetime.now() - t1).total_seconds()
-		except Exception as e:
-			msg = str(e)
-			p = re.compile('hostname \'([^\']+)\' doesn.t match either of')
-			m = p.match( msg )
-			if m is not None and m.group(1) is not None:
-				msg = "Invalid SSL cert for domain name: " + m.group(1)
-
-			self.record_error(
-				site=site,
-				log_message=msg,
-				log_type='info',
-				log_severity='normal',
-				log_bot='Bumble Bee',
-				log_url=data_url
-			)
-			return False, None, None
-		else:
-			# It all worked!
-			try:
-				# Clean the returned string before we parse it, sometimes there are junky error messages
-				# from PHP in here, or simply a newline that shouldn't be present
-				# The regex here is really simple, but it seems to work fine.
-				ret_string = f.read()
-				json_match = re.search(r"({.*})", ret_string, flags=re.MULTILINE)
-				if json_match.group(1) != None:
-					# Found JSON block
-					data = simplejson.loads(json_match.group(1))
-				else:
-					# No JSON content in the response
-					self.record_error(
+				t1 = datetime.datetime.now()
+				f = opener.open(req)
+				duration = (datetime.datetime.now() - t1).total_seconds()
+		except ssl.SSLError as e:
+				msg = "SSL Error: " + str(e)
+				self.record_error(
 						site=site,
-						log_message="No JSON found",
+						log_message=msg,
 						log_type='info',
 						log_severity='normal',
 						log_bot='Bumble Bee',
 						log_url=data_url
-					)
-					return False, None, None
-			except Exception as e:
-				self.record_error(
-					site=site,
-					log_message="%s" % str(e),
-					log_type='info',
-					log_severity='normal',
-					log_bot='Bumble Bee',
-					log_url=data_url
 				)
 				return False, None, None
-			return True, data, duration
+
+		except Exception as e:
+				self.record_error(
+						site=site,
+						log_message=str(e),
+						log_type='info',
+						log_severity='normal',
+						log_bot='Bumble Bee',
+						log_url=data_url
+				)
+				return False, None, None
+		else:
+				# Clean the returned string before we parse it,
+				# sometimes there are junky error messages from PHP in
+				# here, or simply a newline that shouldn't be present
+				# The regex here is really simple, but it seems to
+				# work fine.
+				ret_string = f.read()
+				json_match = re.search(r"({.*})", ret_string, flags=re.MULTILINE)
+				if json_match != None and json_match.group(1) != None:
+						# Found JSON block
+						data = simplejson.loads(json_match.group(1))
+				else:
+						raise NoJSON( data_url + "||" + ret_string )
+				return True, data, duration
 
 	def runSql(self, sql_command, args = None):
 		if self.args.verbose >= 3:
