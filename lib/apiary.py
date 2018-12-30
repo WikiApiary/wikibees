@@ -102,7 +102,7 @@ class ApiaryBot:
 			t1 = datetime.datetime.now()
 			f = opener.open(req)
 			duration = (datetime.datetime.now() - t1).total_seconds()
-		except Exception, e:
+		except Exception as e:
 			msg = str(e)
 			p = re.compile('hostname \'([^\']+)\' doesn.t match either of')
 			m = p.match( msg )
@@ -140,7 +140,7 @@ class ApiaryBot:
 						log_url=data_url
 					)
 					return False, None, None
-			except Exception, e:
+			except Exception as e:
 				self.record_error(
 					site=site,
 					log_message="%s" % str(e),
@@ -164,7 +164,7 @@ class ApiaryBot:
 			cur.close()
 			self.apiary_db.commit()
 			return True, cur.rowcount
-		except Exception, e:
+		except Exception as e:
 			print "Exception generated while running SQL command."
 			print "Command: %s" % sql_command
 			print "Exception: %s" % e
@@ -284,7 +284,7 @@ class ApiaryBot:
 			print "Query: %s" % my_query
 		try:
 			sites = self.apiary_wiki.call({'action': 'ask', 'query': my_query})
-		except Exception, e:
+		except Exception as e:
 			self.record_error(
 				log_message="Problem querying Wikiapiary: %s" % e,
 				log_type='error',
@@ -338,7 +338,7 @@ class ApiaryBot:
 								'Collect logs': collect_logs,
 								'Collect recent changes': collect_recent_changes
 							})
-						except Exception, e:
+						except Exception as e:
 							print "Failed to add %s" % pagename
 							print e
 				return my_sites
