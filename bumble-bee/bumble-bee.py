@@ -98,7 +98,7 @@ class BumbleBee(ApiaryBot):
 			y = re.match(r'.*(alpha|beta|wmf|CLDR|MLEB|stable).*', t)
 			if y:
 				ver['flag'] = y.group(1)
-		except Exception, e:
+		except Exception as e:
 			self.botlog(bot='Bumble Bee', type="warn", message="Exception %s while parsing version string %s" % (e, t))
 
 		if self.args.verbose >= 2:
@@ -135,7 +135,7 @@ class BumbleBee(ApiaryBot):
 				t1 = datetime.datetime.now()
 				f = opener.open(req)
 				duration = (datetime.datetime.now() - t1).total_seconds()
-			except Exception, e:
+			except Exception as e:
 				self.record_error(
 					site=site,
 					log_message="%s" % e,
@@ -289,7 +289,7 @@ class BumbleBee(ApiaryBot):
 				data_soup = BeautifulSoup.BeautifulSoup(data_block)
 				json_block = data_soup.find("div", {"id": "wikiapiary-semantic-usage-data"})
 				json_data = simplejson.loads(json_block.text)
-			except Exception, e:
+			except Exception as e:
 				self.record_error(
 					site=site,
 					log_message="Semantic usage failed parsing: %s" % e,
@@ -1077,7 +1077,7 @@ class BumbleBee(ApiaryBot):
 		# Setup our connection to the wiki too
 		try:
 			self.connectwiki('Bumble Bee')
-		except Exception, e:
+		except Exception as e:
 			self.record_error(
 				site=site,
 				log_message="%s" % e,
@@ -1141,14 +1141,14 @@ class BumbleBee(ApiaryBot):
 						status = self.record_skins(site)
 				if self.args.verbose >= 4:
 					print "☃☃☃☃ Finished this step of the process: %s" % (process)
-			except Exception, e:
-			   self.record_error(
-				   site=site,
-				   log_message='Unhandled exception %s during %s' % (str(e), process),
-				   log_type='error',
-				   log_severity='normal',
-				   log_bot='Bumble Bee'
-			   )
+			except Exception as e:
+				self.record_error(
+						site=site,
+						log_message='Unhandled exception %s during %s' % (str(e), process),
+						log_type='error',
+						log_severity='normal',
+						log_bot='Bumble Bee'
+				)
 
 		duration = time.time() - start_time
 		if self.args.segment is not None:
