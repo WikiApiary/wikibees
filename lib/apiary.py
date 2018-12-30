@@ -17,7 +17,6 @@ import argparse
 import socket
 import MySQLdb as mdb
 import json as simplejson
-import urllib
 import urllib2
 import ssl
 import random
@@ -31,16 +30,16 @@ def list_get(L, i, v=False):
 
 
 class FourHundred(Exception):
-		"""So we can keep track of 4xx errors"""
-		pass
+	"""So we can keep track of 4xx errors"""
+	pass
 
 class FiveHundred(Exception):
-		"""Server (5xx) errors"""
-		pass
+	"""Server (5xx) errors"""
+	pass
 
 class NoJSON(Exception):
-		"""No JSON present"""
-		pass
+	"""No JSON present"""
+	pass
 
 class ApiaryBot:
 
@@ -104,54 +103,87 @@ class ApiaryBot:
 		now = now.replace(microsecond=0)
 		return now.strftime('%Y-%m-%d %H:%M:%S')
 
-	def pull_json(self, site, data_url, bot='Bumble Bee'):
-		socket.setdefaulttimeout(10)
-
-		# Get JSON data via API and return the JSON structure parsed
+	def make_request(self, site, data_url, bot='Bumble Bee'):
 		req = urllib2.Request(data_url)
-		req.add_header('User-Agent', self.config.get('Bumble Bee', 'User-Agent'))
+		req.add_header('User-Agent', self.config.get(bot, 'User-Agent'))
 		opener = urllib2.build_opener()
 
 		try:
-				t1 = datetime.datetime.now()
-				f = opener.open(req)
-				duration = (datetime.datetime.now() - t1).total_seconds()
+			t1 = datetime.datetime.now()
+			f = opener.open(req)
+			duration = (datetime.datetime.now() - t1).total_seconds()
 		except ssl.SSLError as e:
-				msg = "SSL Error: " + str(e)
-				self.record_error(
-						site=site,
-						log_message=msg,
-						log_type='info',
-						log_severity='normal',
-						log_bot='Bumble Bee',
-						log_url=data_url
+			msg = "SSL Error: " + str(e)
+			self.record_error(
+				site=site,
+				log_message=msg,
+				log_type='info',
+				log_severity='normal',
+				log_bot='Bumble Bee',
+				log_url=data_url
 				)
-				return False, None, None
-
+			return None, None
+		except urllib2.URLError as e:
+			self.record_error(
+				site=site,
+				log_message="URLError: %s" % e,
+				log_type='error',
+				log_severity='normal',
+				log_bot=bot,
+				log_url=data_url
+				)
+			return None, None
+		except urllib2.HTTPError as e:
+			if e.code > 399 and e.code < 500:
+				raise FourHundred( e )
+			if e.code > 499 and e.code < 600:
+				raise FiveHundred( e )
+			self.record_error(
+				site=site,
+				log_message="%s" % e,
+				log_type='error',
+				log_severity='normal',
+				log_bot=bot,
+				log_url=data_url
+				)
+			return None, None
 		except Exception as e:
-				self.record_error(
-						site=site,
-						log_message=str(e),
-						log_type='info',
-						log_severity='normal',
-						log_bot='Bumble Bee',
-						log_url=data_url
+			self.record_error(
+				site=site,
+				log_message=str(e),
+				log_type='info',
+				log_severity='normal',
+				log_bot='Bumble Bee',
+				log_url=data_url
 				)
-				return False, None, None
+			return None, None
 		else:
-				# Clean the returned string before we parse it,
-				# sometimes there are junky error messages from PHP in
-				# here, or simply a newline that shouldn't be present
-				# The regex here is really simple, but it seems to
-				# work fine.
-				ret_string = f.read()
-				json_match = re.search(r"({.*})", ret_string, flags=re.MULTILINE)
-				if json_match != None and json_match.group(1) != None:
-						# Found JSON block
-						data = simplejson.loads(json_match.group(1))
-				else:
-						raise NoJSON( data_url + "||" + ret_string )
-				return True, data, duration
+			return f, duration
+
+	def pull_json(self, site, data_url, bot='Bumble Bee'):
+		socket.setdefaulttimeout(10)
+
+		(f, duration) = self.make_request(site, data_url, bot)
+		if f is None:
+			return False, None, None
+		else:
+			# Clean the returned string before we parse it,
+			# sometimes there are junky error messages from PHP in
+			# here, or simply a newline that shouldn't be present
+			# The regex here is really simple, but it seems to
+			# work fine.
+			ret_string = f.read()
+			json_match = re.search(r"({.*})", ret_string, flags=re.MULTILINE)
+			if json_match is None or json_match.group(1) is None:
+				raise NoJSON( data_url + "||" + ret_string )
+
+			# Found JSON block
+			try:
+				data = simplejson.loads(json_match.group(1))
+			except ValueError as e:
+				raise NoJSON( data_url + "||" + ret_string )
+
+			return True, data, duration
 
 	def runSql(self, sql_command, args = None):
 		if self.args.verbose >= 3:

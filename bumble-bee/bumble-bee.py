@@ -127,39 +127,8 @@ class BumbleBee(ApiaryBot):
 			socket.setdefaulttimeout(15)
 
 			# Get CSV data via raw Statistics call
-			req = urllib2.Request(data_url)
-			req.add_header('User-Agent', self.config.get('Bumble Bee', 'User-Agent'))
-			opener = urllib2.build_opener()
-
-			try:
-				t1 = datetime.datetime.now()
-				f = opener.open(req)
-				duration = (datetime.datetime.now() - t1).total_seconds()
-			except urllib2.URLError as e:
-				self.record_error(
-					site=site,
-					log_message="URLError: %s" % e,
-					log_type='error',
-					log_severity='normal',
-					log_bot='Bumble Bee',
-					log_url=data_url
-				)
-				status = False
-			except urllib2.HTTPError as e:
-				if e.code > 399 and e.code < 500:
-						raise FourHundred( e )
-				if e.code > 499 and e.code < 600:
-						raise FiveHundred( e )
-				self.record_error(
-					site=site,
-					log_message="%s" % e,
-					log_type='error',
-					log_severity='normal',
-					log_bot='Bumble Bee',
-					log_url=data_url
-				)
-				status = False
-			else:
+			f = self.make_request(data_url)
+			if f is not None:
 				# Create an object that is the same as that returned by the API
 				ret_string = f.read()
 				ret_string = ret_string.strip()
@@ -185,18 +154,18 @@ class BumbleBee(ApiaryBot):
 						except:
 							if self.args.verbose >= 3:
 								print "Illegal value '%s' for %s." % (value, name)
-				else:
-					status = False # The result didn't match the pattern expected
-					self.record_error(
-						site=site,
-						log_message="Unexpected response to statistics call",
-						log_type='error',
-						log_severity='normal',
-						log_bot='Bumble Bee',
-						log_url=data_url
-					)
-					if self.args.verbose >= 3:
-						print "Result from statistics was not formatted as expected:\n%s" % ret_string
+			else:
+				status = False # The result didn't match the pattern expected
+				self.record_error(
+					site=site,
+					log_message="Unexpected response to statistics call",
+					log_type='error',
+					log_severity='normal',
+					log_bot='Bumble Bee',
+					log_url=data_url
+				)
+				if self.args.verbose >= 3:
+					print "Result from statistics was not formatted as expected:\n%s" % ret_string
 
 		ret_value = True
 		if status:
@@ -1077,27 +1046,28 @@ class BumbleBee(ApiaryBot):
 			#message = "test"
 		else:
 			message = "Starting processing for all websites."
-		self.botlog(bot='Bumble Bee', message=message)
+		thisBot = 'Bumble Bee'
+		self.botlog(thisBot, message=message)
 
 		# Record time at beginning
 		start_time = time.time()
 
 		# Set bot name in case there is an error to record
 		site = {}
-		site['bot_name'] = 'Bumble Bee'
+		site['bot_name'] = thisBot
 		site['pagename'] = '...connecting...'
 		site['Has ID'] = 18
 
 		# Setup our connection to the wiki too
 		try:
-			self.connectwiki('Bumble Bee')
+			self.connectwiki(thisBot)
 		except Exception as e:
 			self.record_error(
 				site=site,
 				log_message="%s" % e,
 				log_type='error',
 				log_severity='normal',
-				log_bot='Bumble Bee',
+				log_bot=thisBot,
 				log_url=None
 			)
 			return
@@ -1158,23 +1128,23 @@ class BumbleBee(ApiaryBot):
 			except (FiveHundred, FourHundred) as e:
 					pass
 			except NoJSON as e:
-					s = str(e)
-					ret = s.split('||')
-					self.record_error(
-							site=site,
-							log_message="Expected JSON, got '%s...'" % ret[1][:50],
-							log_type='info',
-							log_severity='normal',
-							log_bot='Bumble Bee',
-							log_url=ret[0]
+				s = str(e)
+				ret = s.split('||')
+				self.record_error(
+					site=site,
+					log_message="Expected JSON, got '%s...'" % ret[1][:50],
+					log_type='info',
+					log_severity='normal',
+					log_bot=thisBot,
+					log_url=ret[0]
 					)
 			except Exception as e:
 				self.record_error(
 						site=site,
-						log_message='Unhandled exception %s during %s' % (str(e), process),
+						log_message=traceback.format_exc(),
 						log_type='error',
 						log_severity='normal',
-						log_bot='Bumble Bee'
+						log_bot=thisBot
 				)
 
 		duration = time.time() - start_time
@@ -1195,7 +1165,7 @@ class BumbleBee(ApiaryBot):
 			self.stats['interwikimap'], self.stats['namespaces'],
 			self.stats['libraries']
 		)
-		self.botlog(bot='Bumble Bee', duration=float(duration), message=message)
+		self.botlog(bot=thisBot, duration=float(duration), message=message)
 
 
 # Run
