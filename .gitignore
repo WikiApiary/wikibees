@@ -1,3 +1,8 @@
+# -*- mode: gitignore; -*-
+*~
+\#*\#
+.\#*
+
 *.py[cod]
 
 # C extensions
