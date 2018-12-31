@@ -119,7 +119,7 @@ class ApiaryBot:
 				log_message=msg,
 				log_type='info',
 				log_severity='normal',
-				log_bot='Bumble Bee',
+				log_bot=bot,
 				log_url=data_url
 				)
 			return None, None
@@ -153,7 +153,7 @@ class ApiaryBot:
 				log_message=str(e),
 				log_type='info',
 				log_severity='normal',
-				log_bot='Bumble Bee',
+				log_bot=bot,
 				log_url=data_url
 				)
 			return None, None

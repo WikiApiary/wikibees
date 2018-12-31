@@ -114,6 +114,7 @@ class BumbleBee(ApiaryBot):
 				print "Pulling statistics info from %s." % data_url
 			(status, data, duration) = self.pull_json(site, data_url)
 		elif method == 'Statistics':
+			status = False
 			# Get stats the old fashioned way
 			data_url = site['Has statistics URL']
 			if "?" in data_url:
@@ -127,7 +128,7 @@ class BumbleBee(ApiaryBot):
 			socket.setdefaulttimeout(15)
 
 			# Get CSV data via raw Statistics call
-			f = self.make_request(data_url)
+			f, duration = self.make_request(site,data_url)
 			if f is not None:
 				# Create an object that is the same as that returned by the API
 				ret_string = f.read()
@@ -155,7 +156,6 @@ class BumbleBee(ApiaryBot):
 							if self.args.verbose >= 3:
 								print "Illegal value '%s' for %s." % (value, name)
 			else:
-				status = False # The result didn't match the pattern expected
 				self.record_error(
 					site=site,
 					log_message="Unexpected response to statistics call",
