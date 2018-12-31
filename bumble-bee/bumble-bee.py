@@ -35,7 +35,7 @@ from simplemediawiki import MediaWiki
 from apiary import ApiaryBot, FourHundred, FiveHundred, NoJSON
 from PyWhoisAPI import *
 import validators
-
+from xml.sax.saxutils import escape
 import traceback
 
 class BumbleBee(ApiaryBot):
@@ -1092,16 +1092,16 @@ class BumbleBee(ApiaryBot):
 			try:
 				process = "unknown"
 				if req_statistics:
-					if site['Collect statistics']:
+					if site['Collect statistics'] and site['Has API URL']:
 						process = "collect statistics (API)"
 						status = self.record_statistics(site, 'API')
 					if site['Collect statistics stats']:
 						process = "collect statistics (Statistics)"
 						status = self.record_statistics(site, 'Statistics')
-					if site['Collect semantic statistics']:
+					if site['Collect semantic statistics'] and site['Has API URL']:
 						process = "collect semantic statistics"
 						status = self.record_smwinfo(site)
-					if site['Collect semantic usage']:
+					if site['Collect semantic usage'] and site['Has API URL']:
 						process = "collect semantic usage"
 						status = self.record_smwusage(site)
 				if req_general:
@@ -1111,16 +1111,16 @@ class BumbleBee(ApiaryBot):
 					# same. Forcing the timestamp to be +1 second
 					time.sleep(2)
 					self.record_whois(site)
-					if site['Collect general data']:
+					if site['Collect general data'] and site['Has API URL']:
 						process = "collect general data"
 						status = self.record_general(site)
-					if site['Collect extension data']:
+					if site['Collect extension data'] and site['Has API URL']:
 						process = "collect extension data"
 						status = self.record_extensions(site)
 						status = self.record_libraries(site)
 						status = self.record_interwikimap(site)
 						status = self.record_namespaces(site)
-					if site['Collect skin data']:
+					if site['Collect skin data'] and site['Has API URL']:
 						process = "collect skin data"
 						status = self.record_skins(site)
 				if self.args.verbose >= 4:
@@ -1132,7 +1132,7 @@ class BumbleBee(ApiaryBot):
 				ret = s.split('||')
 				self.record_error(
 					site=site,
-					log_message="Expected JSON, got '%s...'" % ret[1][:50],
+					log_message="Expected JSON, got '%s...'" % escape(ret[1][:50]),
 					log_type='info',
 					log_severity='normal',
 					log_bot=thisBot,
