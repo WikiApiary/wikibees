@@ -234,9 +234,9 @@ class ApiaryBot:
 		temp_sql += "(website_id, log_date, website_name, log_type, "
 		temp_sql += "log_severity, log_message, log_bot, log_url) "
 
-		if len(log_message) > 255:
+		if len(log_message) > 2**16:
 			print "log_message too long: %s" % log_message
-			log_message = log_message[0:255]
+			log_message = log_message[0:2**16]
 		# The format string is not really a normal Python format
 		# string.  You must always use %s http://stackoverflow.com/a/5785163
 		temp_sql += "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
