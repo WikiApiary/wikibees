@@ -1075,6 +1075,23 @@ class BumbleBee(ApiaryBot):
         # Get list of websites to work on
         sites = self.get_websites(self.args.segment, self.args.site)
 
+        if sites is None:
+            section = "all websites."
+            if self.args.segment is not None:
+                section = "segment %d." % int(self.args.segment)
+            message = "No sites to process for " + section
+            duration = time.time() - start_time
+            self.botlog(bot=thisBot, duration=float(duration), message=message)
+            self.record_error(
+                site=site,
+                log_message=message,
+                log_type='error',
+                log_severity='normal',
+                log_bot=thisBot,
+                log_url=None
+            )
+            return
+
         i = 0
         for site in sites:
             i += 1
