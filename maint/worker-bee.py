@@ -173,7 +173,7 @@ WHERE log_date < DATE_SUB(NOW(), INTERVAL 4 WEEK)
 
         for page in c['query']['categorymembers']:
             # This is logged elsewhere so this is disabled to reduce email spam
-	    #print "Deleting %s (%d)..." % (page['title'], page['pageid'])
+            #print "Deleting %s (%d)..." % (page['title'], page['pageid'])
 
             # Need a new token for every edit
             d = self.apiary_wiki.call({'action': 'query', 'meta': 'tokens'})

@@ -37,7 +37,7 @@ try {
     if ( count($result) ) {
         foreach($result as $row) {
             printf ("%s, %s\n",
-		$row['capture_date'], $row['propcount']);
+                $row['capture_date'], $row['propcount']);
         }
     } else {
         echo "No rows returned.";
