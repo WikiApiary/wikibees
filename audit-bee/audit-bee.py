@@ -331,13 +331,13 @@ class AuditBee(ApiaryBot):
             print "Query: %s" % my_query
 
         socket.setdefaulttimeout(30)
-	try:
+        try:
             sites = self.apiary_wiki.call({
                 'action': 'ask',
                 'query': my_query
             })
-	except Exception, e:
-	    self.record_error(
+        except Exception, e:
+            self.record_error(
                 log_message="Problem querying Wikiapiary: %s" % e,
                 log_type='error',
                 log_severity='important',
@@ -443,7 +443,7 @@ class AuditBee(ApiaryBot):
         try:
             self.connectwiki('Audit Bee')
         except Exception, e:
-	    self.record_error(
+            self.record_error(
                 log_message="Problem connecting to Wikiapiary: %s" % e,
                 log_type='error',
                 log_severity='important',
