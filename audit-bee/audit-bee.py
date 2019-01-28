@@ -343,7 +343,7 @@ class AuditBee(ApiaryBot):
                 log_severity='important',
                 log_bot='Audit Bee'
             )
-
+            return None
 
         my_sites = []
         if len(sites['query']['results']) > 0:
