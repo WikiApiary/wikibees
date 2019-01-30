@@ -453,7 +453,7 @@ class AuditBee(ApiaryBot):
 
         # Do never audited first
         sites = self.get_audit_list(group='Websites never audited', count=20)
-        if len(sites) > 0:
+        if sites is not None and len(sites) > 0:
             for site in sites:
                 self.stats['audit_count'] += 1
                 try:
