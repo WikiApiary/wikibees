@@ -468,7 +468,7 @@ class AuditBee(ApiaryBot):
 
         # Do re-audits
         sites = self.get_audit_list(group='Websites expired audit', count=20)
-        if len(sites) > 0:
+        if sites is not None and len(sites) > 0:
             for site in sites:
                 self.stats['audit_count'] += 1
                 try:
