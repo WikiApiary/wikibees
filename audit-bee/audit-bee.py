@@ -151,6 +151,66 @@ class AuditBee(ApiaryBot):
             )
             return False
 
+    def audit_success(self,data,data_url,site)
+        if 'query' in data:
+            do_audit_extensions = self.set_audit(site, data['query']['general'])
+            audit_complete = True
+        elif 'error' in data:
+            if 'code' in data['error']:
+                if data['error']['code'] == 'readapidenied':
+                    # This website will not let us talk to it, defunct it.
+                    self.set_flag(site['pagename'], 'Defunct', 'Yes',
+                                  'Marking defunct because readapidenied')
+                    self.record_error(
+                        site=site,
+                        log_message="readapidenied, marking defunct",
+                        log_type='warn',
+                        log_severity='important',
+                        log_bot='Audit Bee',
+                        log_url=data_url
+                    )
+                else:
+                    self.record_error(
+                        site=site,
+                        log_message="Returned error %s" % data['error']['code'],
+                        log_type='warn',
+                        log_severity='important',
+                        log_bot='Audit Bee',
+                        log_url=data_url
+                    )
+            else:
+                self.record_error(
+                    site=site,
+                    log_message="An unknown error was returned from site info",
+                    log_type='warn',
+                    log_severity='important',
+                    log_bot='Audit Bee',
+                    log_url=data_url
+                )
+        else:
+            self.record_error(
+                site=site,
+                log_message="Returned unexpected JSON while requesting general site info",
+                log_type='warn',
+                log_severity='important',
+                log_bot='Audit Bee',
+                log_url=data_url
+            )
+
+    def audit_failure(self,data_url,site)
+        #If the whois query for the site succeeds (does not contain ERROR101) then the whois passed.
+        if(whois.queryWhois(data_url).find("ERROR:101: no entries found")!=-1):
+            self.set_flag(site['pagename'], 'Defunct', 'Yes',
+                    'Marking defunct, no whois record')
+            self.record_error(
+                site=site,
+                log_message="no whois record",
+                log_type='warn',
+                log_severity='important',
+                log_bot='Audit Bee',
+                log_url=data_url
+            )
+        
     def audit_site(self, site):
         if self.args.verbose >= 1:
             print "\n\nSite: ", site
@@ -164,50 +224,9 @@ class AuditBee(ApiaryBot):
         do_audit_extensions = False
 
         if success:
-            if 'query' in data:
-                do_audit_extensions = self.set_audit(site, data['query']['general'])
-                audit_complete = True
-            elif 'error' in data:
-                if 'code' in data['error']:
-                    if data['error']['code'] == 'readapidenied':
-                        # This website will not let us talk to it, defunct it.
-                        self.set_flag(site['pagename'], 'Defunct', 'Yes',
-                                      'Marking defunct because readapidenied')
-                        self.record_error(
-                            site=site,
-                            log_message="readapidenied, marking defunct",
-                            log_type='warn',
-                            log_severity='important',
-                            log_bot='Audit Bee',
-                            log_url=data_url
-                        )
-                    else:
-                        self.record_error(
-                            site=site,
-                            log_message="Returned error %s" % data['error']['code'],
-                            log_type='warn',
-                            log_severity='important',
-                            log_bot='Audit Bee',
-                            log_url=data_url
-                        )
-                else:
-                    self.record_error(
-                        site=site,
-                        log_message="An unknown error was returned from site info",
-                        log_type='warn',
-                        log_severity='important',
-                        log_bot='Audit Bee',
-                        log_url=data_url
-                    )
-            else:
-                self.record_error(
-                    site=site,
-                    log_message="Returned unexpected JSON while requesting general site info",
-                    log_type='warn',
-                    log_severity='important',
-                    log_bot='Audit Bee',
-                    log_url=data_url
-                )
+            audit_success(data,data_url,site)
+        else:
+            audit_failure(data_url,site)
 
         # Pull extension information for audit too!
         if do_audit_extensions:
