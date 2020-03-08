@@ -374,7 +374,14 @@ class ApiaryBot:
                         except Exception as e:
                             print "Failed to add %s" % pagename
                             print e
-                return my_sites
+                            self.record_error(
+                                site=site,
+                                log_message="Failed to add page",
+                                log_type='warn',
+                                log_severity='important',
+                                log_bot='apiary.py',
+                                log_url=data_url
+                            return my_sites
             else:
                 raise Exception("No sites were returned to work on.")
 
