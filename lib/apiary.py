@@ -21,6 +21,8 @@ import urllib2
 import ssl
 import random
 import re
+import gzip
+from StringIO import StringIO
 from urllib2 import Request, urlopen, URLError, HTTPError
 from simplemediawiki import MediaWiki
 
@@ -106,6 +108,7 @@ class ApiaryBot:
     def make_request(self, site, data_url, bot='Bumble Bee'):
         req = urllib2.Request(data_url)
         req.add_header('User-Agent', self.config.get(bot, 'User-Agent'))
+        req.add_header('Accept-Encoding', 'gzip')
         opener = urllib2.build_opener()
 
         try:
@@ -172,7 +175,12 @@ class ApiaryBot:
             # here, or simply a newline that shouldn't be present
             # The regex here is really simple, but it seems to
             # work fine.
-            ret_string = f.read()
+            if f.info().get('Content-Encoding') == 'gzip':
+                buf = StringIO(f.read())
+                gz = gzip.GzipFile(fileobj=buf)
+                ret_string = gz.read()
+            else:
+                ret_string = f.read()
             json_match = re.search(r"({.*})", ret_string, flags=re.MULTILINE)
             if json_match is None or json_match.group(1) is None:
                 raise NoJSON( data_url + "||" + ret_string )

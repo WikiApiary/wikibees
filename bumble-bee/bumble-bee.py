@@ -25,6 +25,8 @@ import yaml
 import urllib2
 from urllib2 import Request, urlopen, URLError, HTTPError
 import re
+import gzip
+from StringIO import StringIO
 import HTMLParser
 import BeautifulSoup
 import operator
@@ -131,7 +133,12 @@ class BumbleBee(ApiaryBot):
             f, duration = self.make_request(site,data_url)
             if f is not None:
                 # Create an object that is the same as that returned by the API
-                ret_string = f.read()
+                if f.info().get('Content-Encoding') == 'gzip':
+                    buf = StringIO(f.read())
+                    gz = gzip.GzipFile(fileobj=buf)
+                    ret_string = gz.read()
+                else:
+                    ret_string = f.read()
                 ret_string = ret_string.strip()
                 if re.match(r'(\w+=\d+)\;?', ret_string):
                     # The return value looks as we expected
