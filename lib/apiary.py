@@ -389,6 +389,7 @@ class ApiaryBot:
                                 log_severity='important',
                                 log_bot='apiary.py',
                                 log_url=data_url
+                            )
                             return my_sites
             else:
                 raise Exception("No sites were returned to work on.")
