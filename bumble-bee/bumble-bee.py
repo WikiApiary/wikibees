@@ -1084,12 +1084,12 @@ class BumbleBee(ApiaryBot):
             else:
                 #If not whois, then record generic error
                 self.record_error(
-                site=site,
-                log_message="%s" % e,
-                log_type='error',
-                log_severity='normal',
-                log_bot=thisBot,
-                log_url=None
+                    site=site,
+                    log_message="%s" % e,
+                    log_type='error',
+                    log_severity='normal',
+                    log_bot=thisBot,
+                    log_url=None
                 )
             return
 
