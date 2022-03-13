@@ -543,6 +543,8 @@ class BumbleBee(ApiaryBot):
                 if isinstance(value, basestring):
                     # A pipe will break the template, try HTML entity encoding it instead
                     value = value.replace('|', '&#124;')
+                    # Double right brackets also will break the template
+                    value = value.replace('}}', '&rcub;&rcub;')
                 if key == 'lang':
                     # Make sure language is all lowercase, and try to standardize structure
                     value = value.lower().replace('_', '-').replace(' ', '-')
