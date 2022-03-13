@@ -1069,31 +1069,14 @@ class BumbleBee(ApiaryBot):
         try:
             self.connectwiki(thisBot)
         except Exception as e:
-            # If the whois query for the site succeeds (does not contain
-            # ERROR101) then the whois passed. If it fails, log error as that
-            whois = Whois()
-
-            if(whois.queryWhois(data_url).find("ERROR:101: no entries found")!=-1):
-                self.set_flag(site['pagename'], 'Defunct', 'Yes',
-                        'Marking defunct, no whois record')
-                self.record_error(
-                    site=site,
-                    log_message="no whois record",
-                    log_type='warn',
-                    log_severity='important',
-                    log_bot='Audit Bee',
-                    log_url=data_url
-                )
-            else:
-                #If not whois, then record generic error
-                self.record_error(
+            self.record_error(
                 site=site,
                 log_message="%s" % e,
                 log_type='error',
                 log_severity='normal',
                 log_bot=thisBot,
                 log_url=None
-                )
+            )
             return
 
         # Get list of websites to work on
