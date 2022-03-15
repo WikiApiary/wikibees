@@ -80,7 +80,7 @@ class smw_community:
                     self.sites[i]['API URL'] = new_api_url
                 else:
                     print "  Returned %s" % req.status_code
-            except Exception, e:
+            except Exception as e:
                 print "Exception: %s" % e
 
     def main(self):

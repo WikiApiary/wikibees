@@ -133,7 +133,7 @@ with open('BHW-alive_wikis.txt', 'rU') as f:
                 else:
                     print "(%d) Unable to find logo div" % i
 
-            except Exception, e:
+            except Exception as e:
                 print "(%d) EXCEPTION: %s" % (i, e)
 
             if logo_full_url != '':
@@ -164,7 +164,7 @@ with open('BHW-alive_wikis.txt', 'rU') as f:
 
             success += 1
 
-        except Exception, e:
+        except Exception as e:
             print "(%d) EXCEPTION: %s\n" % (i, e)
             fail += 1
             continue

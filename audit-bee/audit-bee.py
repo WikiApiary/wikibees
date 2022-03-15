@@ -355,7 +355,7 @@ class AuditBee(ApiaryBot):
                 'action': 'ask',
                 'query': my_query
             })
-        except Exception, e:
+        except Exception as e:
             self.record_error(
                 log_message="Problem querying Wikiapiary: %s" % e,
                 log_type='error',
@@ -449,7 +449,7 @@ class AuditBee(ApiaryBot):
                         'Is audited': (site['printouts']['Is audited'][0] == "t"),
                         'Is active': (site['printouts']['Is active'][0] == "t")
                     })
-                except Exception, e:
+                except Exception as e:
                     print( "Exception while appending %s" % pagename )
                     print( e )
 
@@ -461,7 +461,7 @@ class AuditBee(ApiaryBot):
         # Setup our connection to the wiki too
         try:
             self.connectwiki('Audit Bee')
-        except Exception, e:
+        except Exception as e:
             self.record_error(
                 log_message="Problem connecting to Wikiapiary: %s" % e,
                 log_type='error',
@@ -477,7 +477,7 @@ class AuditBee(ApiaryBot):
                 self.stats['audit_count'] += 1
                 try:
                     self.audit_site(site)
-                except Exception, e:
+                except Exception as e:
                     self.record_error(
                         log_message="Unhandled exception %s." % e,
                         log_type='error',
@@ -492,7 +492,7 @@ class AuditBee(ApiaryBot):
                 self.stats['audit_count'] += 1
                 try:
                     self.audit_site(site)
-                except Exception, e:
+                except Exception as e:
                     self.record_error(
                         site=site,
                         log_message="Unhandled exception %s." % e,
