@@ -80,7 +80,7 @@ class ApiaryBot:
             self.config = ConfigParser.ConfigParser()
             self.config.read(config_file)
         except IOError:
-            print "Cannot open %s." % config_file
+            print( "Cannot open %s." % config_file )
 
     def get_args(self):
         parser = argparse.ArgumentParser(prog="Bumble Bee", description="retrieves usage and statistic information for WikiApiary")
@@ -195,7 +195,7 @@ class ApiaryBot:
 
     def runSql(self, sql_command, args = None):
         if self.args.verbose >= 3:
-            print "SQL: %s" % sql_command
+            print( "SQL: %s" % sql_command )
         try:
             cur = self.apiary_db.cursor()
             cur.execute('SET NAMES utf8mb4')
@@ -206,18 +206,18 @@ class ApiaryBot:
             self.apiary_db.commit()
             return True, cur.rowcount
         except Exception as e:
-            print "Exception generated while running SQL command."
-            print "Command: %s" % sql_command
-            print "Exception: %s" % e
+            print( "Exception generated while running SQL command." )
+            print( "Command: %s" % sql_command )
+            print( "Exception: %s" % e )
             return False, 0
 
     def record_error(self, site=None, log_message='Unknown Error', log_type='info', log_severity='normal', log_bot=None, log_url=None):
 
         if self.args.verbose >= 2:
-            print "New log message for %s" % site['pagename']
+            print( "New log message for %s" % site['pagename'] )
 
         if self.args.verbose >= 1:
-            print log_message
+            print( log_message )
 
         if site is None:
             site = {};
@@ -243,7 +243,7 @@ class ApiaryBot:
         temp_sql += "log_severity, log_message, log_bot, log_url) "
 
         if len(log_message) > 65535:
-            print "log_message too long: %s" % log_message
+            print( "log_message too long: %s" % log_message )
             log_message = log_message[0:65535]
         # The format string is not really a normal Python format
         # string.  You must always use %s http://stackoverflow.com/a/5785163
@@ -258,7 +258,7 @@ class ApiaryBot:
         socket.setdefaulttimeout(30)
 
         if self.args.verbose >= 2:
-            print "Clearing error for %s" % sitename
+            print( "Clearing error for %s" % sitename )
 
         c = self.apiary_wiki.call({
             'action': 'sfautoedit',
@@ -267,7 +267,7 @@ class ApiaryBot:
             'Website[Error]': 'No',
             'wpSummary': 'clearing error'})
         if self.args.verbose >= 3:
-            print "result:%s"%c
+            print( "result:%s"%c )
 
     def connectdb(self):
         # Setup our database connection
@@ -283,18 +283,18 @@ class ApiaryBot:
         self.apiary_wiki = MediaWiki(self.config.get('WikiApiary', 'API'))
         c = self.apiary_wiki.login(self.config.get(bot_name, 'Username'), self.config.get(bot_name, 'Password'))
         if self.args.verbose >= 1:
-            print "Username: %s Password: %s" % (self.config.get(bot_name, 'Username'), self.config.get(bot_name, 'Password'))
-            print c
+            print( "Username: %s Password: %s" % (self.config.get(bot_name, 'Username'), self.config.get(bot_name, 'Password')) )
+            print( c )
 
     def get_websites(self, segment, site):
         filter_string = ""
         if site is not None:
             if self.args.verbose >= 1:
-                print "Processing site %d." % int(site)
+                print( "Processing site %d." % int(site) )
             filter_string = "[[Has ID::%d]]" % int(site)
         elif segment is not None:
             if self.args.verbose >= 1:
-                print "Only retrieving segment %d." % int(self.args.segment)
+                print( "Only retrieving segment %d." % int(self.args.segment) )
             filter_string = "[[Has bot segment::%d]]" % int(self.args.segment)
             #filter_string = "test"
 
@@ -322,7 +322,7 @@ class ApiaryBot:
             '|order=asc',
             '|limit=2000'])
         if self.args.verbose >= 3:
-            print "Query: %s" % my_query
+            print( "Query: %s" % my_query )
         try:
             sites = self.apiary_wiki.call({'action': 'ask', 'query': my_query})
         except Exception as e:
@@ -341,7 +341,7 @@ class ApiaryBot:
                 for pagename, site in sites['query']['results'].items():
                     i += 1
                     if self.args.verbose >= 3:
-                        print "[%d] Adding %s." % (i, pagename)
+                        print( "[%d] Adding %s." % (i, pagename) )
                     # Initialize the flags but do it carefully in case there is no value in the wiki yet
                     collect_general_data = list_get(site['printouts'], 'Collect general data')== "t"
                     collect_extension_data = list_get(site['printouts'], 'Collect extension data') == "t"
@@ -358,7 +358,7 @@ class ApiaryBot:
                     if has_statistics_url.find('wikkii.com') > 0:
                         # Temporary filter out all Farm:Wikkii sites
                         if self.args.verbose >= 2:
-                            print "Skipping %s (%s)" % (pagename, site['fullurl'])
+                            print( "Skipping %s (%s)" % (pagename, site['fullurl']) )
                     else:
                         try:
                             my_sites.append({
@@ -380,8 +380,8 @@ class ApiaryBot:
                                 'Collect recent changes': collect_recent_changes
                             })
                         except Exception as e:
-                            print "Failed to add %s" % pagename
-                            print e
+                            print( "Failed to add %s" % pagename )
+                            print( e )
                             self.record_error(
                                 site=site,
                                 log_message="Failed to add page",
@@ -413,9 +413,9 @@ class ApiaryBot:
 
             (last_statistics, last_general, check_every_limit) = data[0:3]
             if self.args.verbose >= 3:
-                print "last_stats: %s" % last_statistics
-                print "last_general: %s" % last_general
-                print "check_every_limit: %s" % check_every_limit
+                print( "last_stats: %s" % last_statistics )
+                print( "last_general: %s" % last_general )
+                print( "check_every_limit: %s" % check_every_limit )
 
             #TODO: make this check the times!
             last_statistics_struct = time.strptime(str(last_statistics), '%Y-%m-%d %H:%M:%S')
@@ -425,21 +425,21 @@ class ApiaryBot:
             general_delta = (time.mktime(time.gmtime()) - time.mktime(last_general_struct)) / 60
 
             if self.args.verbose >= 2:
-                print "Delta from checks: stats %s general %s" % (stats_delta, general_delta)
+                print( "Delta from checks: stats %s general %s" % (stats_delta, general_delta) )
 
             (check_stats, check_general) = (False, False)
             if stats_delta > (site['Check every'] + random.randint(0, 15))  and stats_delta > check_every_limit:    # Add randomness to keep checks spread around
                 check_stats = True
             else:
                 if self.args.verbose >= 2:
-                    print "Skipping stats..."
+                    print( "Skipping stats..." )
                 self.stats['skippedstatistics'] += 1
 
             if general_delta > ((24 + random.randint(0, 24)) * 60):   # General checks are always bound to 24 hours, plus a random offset to keep checks evenly distributed
                 check_general = True
             else:
                 if self.args.verbose >= 2:
-                    print "Skipping general..."
+                    print( "Skipping general..." )
                 self.stats['skippedgeneral'] += 1
 
             return (check_stats, check_general)
@@ -448,7 +448,7 @@ class ApiaryBot:
             cur.close()
             # This website doesn't have a status, so we should check everything
             if self.args.verbose >= 3:
-                print "website has never been checked before"
+                print( "website has never been checked before" )
             return (True, True)
 
         else:
@@ -469,7 +469,7 @@ class ApiaryBot:
         if rows_affected == 0:
             # No rows were updated, this website likely didn't exist before, so we need to insert the first time
             if self.args.verbose >= 2:
-                print "No website_status record exists for ID %d, creating one" % site['Has ID']
+                print( "No website_status record exists for ID %d, creating one" % site['Has ID'] )
             temp_sql = "INSERT website_status (website_id, last_statistics, last_general, check_every_limit) "
             temp_sql += "VALUES (%d, \"%s\", \"%s\", %d) " % (site['Has ID'], my_now, my_now, 240)
             temp_sql += "ON DUPLICATE KEY UPDATE last_statistics=\"%s\", last_general=\"%s\", check_every_limit=%d" % (my_now, my_now, 240)
@@ -477,7 +477,7 @@ class ApiaryBot:
 
     def botlog(self, bot, message, type='info', duration=0):
         if self.args.verbose >= 1:
-            print message
+            print( message )
 
         temp_sql = "INSERT  apiary_bot_log (log_date, log_type, bot, duration, message) "
         temp_sql += "VALUES (\"%s\", \"%s\", \"%s\", %f, \"%s\")" % (self.sqlutcnow(), type, bot, duration, message)

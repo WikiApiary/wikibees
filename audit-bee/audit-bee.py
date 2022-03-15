@@ -32,7 +32,7 @@ class AuditBee(ApiaryBot):
 
     def update_audit_status(self, pagename):
         if self.args.verbose >= 2:
-            print "%s audit completed, updating audit date." % pagename
+            print( "%s audit completed, updating audit date." % pagename )
 
         socket.setdefaulttimeout(30)
         c = self.apiary_wiki.call({
@@ -43,11 +43,11 @@ class AuditBee(ApiaryBot):
             'Website[Audited date]': time.strftime('%Y/%m/%d %I:%M:%S %p', time.gmtime()),
             'wpSummary': 'audited'})
         if self.args.verbose >= 3:
-            print c
+            print( c )
 
     def set_flag(self, pagename, name, value, comment):
         if self.args.verbose >= 2:
-            print "%s setting %s to %s (%s)." % (pagename, name, value, comment)
+            print( "%s setting %s to %s (%s)." % (pagename, name, value, comment) )
 
         property = "Website[%s]" % name
         socket.setdefaulttimeout(30)
@@ -58,7 +58,7 @@ class AuditBee(ApiaryBot):
             property: value,
             'wpSummary': comment})
         if self.args.verbose >= 3:
-            print c
+            print( c )
 
     def set_audit_extensions(self, site, extensions):
         for extension in extensions:
@@ -85,8 +85,8 @@ class AuditBee(ApiaryBot):
             (mw_version_major, mw_version_minor) = (int(match.group(1)), int(match.group(2)))
 
             if self.args.verbose >= 2:
-                print ( "Website: %s  Generator: %s  Major: %d  Minor: %d" %
-                        (site['pagename'], data['generator'], mw_version_major, mw_version_minor) )
+                print( "Website: %s  Generator: %s  Major: %d  Minor: %d" %
+					  (site['pagename'], data['generator'], mw_version_major, mw_version_minor) )
 
             # General data requires MediaWiki 1.8 or later.
             if ( ( mw_version_major >= 1) and (mw_version_minor >= 8) and
@@ -141,7 +141,7 @@ class AuditBee(ApiaryBot):
             # Unable to determine the version of MediaWiki. This is probably because the
             # wiki has been altered to hide its version.
             if self.args.verbose >= 2:
-                print ("%s returnd version %s which cannot be parsed." %
+                print("%s returnd version %s which cannot be parsed." %
                        (site['pagename'], data['generator']))
             self.record_error(
                 site=site,
@@ -210,13 +210,13 @@ class AuditBee(ApiaryBot):
                 log_bot='Audit Bee',
                 log_url=data_url
             )
-        
+
     def audit_site(self, site):
         if self.args.verbose >= 1:
-            print "\n\nSite: ", site
+            print( "\n\nSite: ", site )
         data_url = site['Has API URL'] + "?action=query&meta=siteinfo&siprop=general&format=json"
         if self.args.verbose >= 2:
-            print "Pulling general info info from %s." % data_url
+            print( "Pulling general info info from %s." % data_url )
         (success, data, duration) = self.pull_json(site, data_url, bot='Audit Bee')
 
         audit_complete = False
@@ -233,7 +233,7 @@ class AuditBee(ApiaryBot):
             data_url = site['Has API URL'] + ( "?action=query&meta=siteinfo"
                                                "&siprop=extensions&format=json" )
             if self.args.verbose >= 2:
-                print "Pulling extension info info from %s." % data_url
+                print( "Pulling extension info info from %s." % data_url )
             (success, data, duration) = self.pull_json(site['pagename'], data_url, bot='Audit Bee')
 
             if success:
@@ -258,13 +258,13 @@ class AuditBee(ApiaryBot):
             ])
 
             if self.args.verbose >= 3:
-                print "Query: %s" % my_query
+                print( "Query: %s" % my_query )
 
             socket.setdefaulttimeout(30)
             check_date = self.apiary_wiki.call({'action': 'ask', 'query': my_query})
 
             if self.args.verbose >= 3:
-                print "Response: %s" % check_date
+                print( "Response: %s" % check_date )
 
             if len(check_date['query']['results'][site['pagename']]['printouts']['Founded date']) > 0:
                 update_founded_date = False
@@ -307,7 +307,7 @@ class AuditBee(ApiaryBot):
                     )
             else:
                 if self.args.verbose >= 2:
-                    print "Date founded is already set, not checking."
+                    print( "Date founded is already set, not checking." )
 
         if (audit_complete) and (do_audit_extensions == audit_extensions_complete):
             # Activate the site, but only if the site has not been audited before
@@ -315,7 +315,7 @@ class AuditBee(ApiaryBot):
             if not site['Is audited']:
                 if not site['Is active']:
                     if self.args.verbose >= 2:
-                        print "Activating %s." % site['pagename']
+                        print( "Activating %s." % site['pagename'] )
                     self.set_flag(site['pagename'], 'Active', 'Yes', "Activated.")
 
             self.stats['audit_success'] += 1
@@ -347,7 +347,7 @@ class AuditBee(ApiaryBot):
             "|limit=%d" % count])
 
         if self.args.verbose >= 3:
-            print "Query: %s" % my_query
+            print( "Query: %s" % my_query )
 
         socket.setdefaulttimeout(30)
         try:
@@ -368,7 +368,7 @@ class AuditBee(ApiaryBot):
         if len(sites['query']['results']) > 0:
             for pagename, site in sites['query']['results'].items():
                 if self.args.verbose >= 3:
-                    print "Adding %s." % pagename
+                    print( "Adding %s." % pagename )
 
                 # Initialize the flags but do it carefully in case there is no value in the wiki yet
                 try:
@@ -450,8 +450,8 @@ class AuditBee(ApiaryBot):
                         'Is active': (site['printouts']['Is active'][0] == "t")
                     })
                 except Exception, e:
-                    print "Exception while appending %s" % pagename
-                    print e
+                    print( "Exception while appending %s" % pagename )
+                    print( e )
 
         return my_sites
 
@@ -504,7 +504,8 @@ class AuditBee(ApiaryBot):
         duration = time.time() - start_time
         if self.stats['audit_count'] > 0:
             message = ( "Completed audit %d sites  %d succeeded  %d failed" %
-                        (self.stats['audit_count'], self.stats['audit_success'],
+                        (self.stats['audit_count'],
+						 self.stats['audit_success'],
                          self.stats['audit_failure']) )
             self.botlog(bot='Audit Bee', duration=float(duration), message=message)
 
