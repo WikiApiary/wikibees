@@ -1077,7 +1077,7 @@ class BumbleBee(ApiaryBot):
                 log_type='error',
                 log_severity='normal',
                 log_bot=thisBot,
-                log_url=None
+                log_url="NAU"
             )
             return
 
@@ -1097,7 +1097,7 @@ class BumbleBee(ApiaryBot):
                 log_type='error',
                 log_severity='normal',
                 log_bot=thisBot,
-                log_url=None
+                log_url="NAU"
             )
             return
 
