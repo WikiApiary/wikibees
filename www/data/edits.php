@@ -1,5 +1,5 @@
 <?php
-require_once ('/home/thingles/wikibots/WikiApiary/apiary-config.php');
+require_once( __DIR__ . '/config.php' );
 
 $id = isset( $_GET['id'] ) ? $_GET['id'] : 20;
 $durationParam = isset( $_GET['duration'] ) ? $_GET['id'] : '1w';
