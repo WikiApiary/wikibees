@@ -365,7 +365,7 @@ class AuditBee(ApiaryBot):
             return None
 
         my_sites = []
-        if len(sites['query']['results']) > 0:
+        if len(sites.get('query', {}).get('results', [])) > 0:
             for pagename, site in sites['query']['results'].items():
                 if self.args.verbose >= 3:
                     print( "Adding %s." % pagename )
