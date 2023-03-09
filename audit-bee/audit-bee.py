@@ -151,7 +151,7 @@ class AuditBee(ApiaryBot):
             )
             return False
 
-    def audit_success(data,data_url,site):
+    def audit_success(self,data,data_url,site):
         if 'query' in data:
             do_audit_extensions = self.set_audit(site, data['query']['general'])
             audit_complete = True
@@ -197,7 +197,7 @@ class AuditBee(ApiaryBot):
                 log_url=data_url
             )
 
-    def audit_failure(data_url,site):
+    def audit_failure(self,data_url,site):
         #If the whois query for the site succeeds (does not contain ERROR101) then the whois passed.
         if(whois.queryWhois(data_url).find("ERROR:101: no entries found")!=-1):
             self.set_flag(site['pagename'], 'Defunct', 'Yes',
@@ -224,9 +224,9 @@ class AuditBee(ApiaryBot):
         do_audit_extensions = False
 
         if success:
-            audit_success(data,data_url,site)
+            self.audit_success(data,data_url,site)
         else:
-            audit_failure(data_url,site)
+            self.audit_failure(data_url,site)
 
         # Pull extension information for audit too!
         if do_audit_extensions:
