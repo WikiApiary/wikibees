@@ -18,6 +18,7 @@ import dateutil.parser
 from urllib2 import Request, urlopen, URLError, HTTPError
 from simplemediawiki import MediaWiki
 import re
+import whois
 sys.path.append('../lib')
 from apiary import ApiaryBot
 
