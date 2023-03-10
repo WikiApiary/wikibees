@@ -45,7 +45,7 @@ class AuditBee(ApiaryBot):
                 'wpSummary': 'audited'})
             if self.args.verbose >= 3:
                 print( c )
-         except Exception as e:
+        except Exception as e:
 		print( "Exception: %s" % e )
 		
     def set_flag(self, pagename, name, value, comment):
@@ -63,7 +63,7 @@ class AuditBee(ApiaryBot):
                 'wpSummary': comment})
             if self.args.verbose >= 3:
                 print( c )
-         except Exception as e:
+        except Exception as e:
 		print( "Exception: %s" % e )
 		      
     def set_audit_extensions(self, site, extensions):
@@ -225,7 +225,7 @@ class AuditBee(ApiaryBot):
             print( "Pulling general info info from %s." % data_url )
         try:
 	    (success, data, duration) = self.pull_json(site, data_url, bot='Audit Bee')
-         except Exception as e:
+        except Exception as e:
 		print( "Exception: %s" % e )
 		success = False
 
