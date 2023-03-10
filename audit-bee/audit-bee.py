@@ -47,15 +47,15 @@ class AuditBee(ApiaryBot):
                 print( c )
         except Exception as e:
             if self.args.verbose >= 2:    
-		print( "Exception: %s" % e )
-		
+                print( "Exception: %s" % e )
+                
     def set_flag(self, pagename, name, value, comment):
         if self.args.verbose >= 2:
             print( "%s setting %s to %s (%s)." % (pagename, name, value, comment) )
 
         property = "Website[%s]" % name
         socket.setdefaulttimeout(30)
-	try:
+        try:
             c = self.apiary_wiki.call({
                 'action': 'pfautoedit',
                 'form': 'Website',
@@ -67,7 +67,7 @@ class AuditBee(ApiaryBot):
         except Exception as e:
             if self.args.verbose >= 2:
                 print( "Exception setting %s: %s" % (property, e) )
-		      
+
     def set_audit_extensions(self, site, extensions):
         for extension in extensions:
             # Semantic statistics requires Semantic MediaWiki 1.6 or later.
@@ -94,7 +94,7 @@ class AuditBee(ApiaryBot):
 
             if self.args.verbose >= 2:
                 print( "Website: %s  Generator: %s  Major: %d  Minor: %d" %
-					  (site['pagename'], data['generator'], mw_version_major, mw_version_minor) )
+                    (site['pagename'], data['generator'], mw_version_major, mw_version_minor) )
 
             # General data requires MediaWiki 1.8 or later.
             if ( ( mw_version_major >= 1) and (mw_version_minor >= 8) and
@@ -226,7 +226,7 @@ class AuditBee(ApiaryBot):
         if self.args.verbose >= 2:
             print( "Pulling general info info from %s." % data_url )
         try:
-	    (success, data, duration) = self.pull_json(site, data_url, bot='Audit Bee')
+            (success, data, duration) = self.pull_json(site, data_url, bot='Audit Bee')
         except Exception as e:
             if self.args.verbose >= 2:    
                 print( "Exception: %s" % e )
@@ -249,7 +249,7 @@ class AuditBee(ApiaryBot):
                 print( "Pulling extension info info from %s." % data_url )
 
             try:
-		(success, data, duration) = self.pull_json(site['pagename'], data_url, bot='Audit Bee')
+                (success, data, duration) = self.pull_json(site['pagename'], data_url, bot='Audit Bee')
             except Exception as e:
                 if self.args.verbose >= 2:                
                     print( "Exception: %s" % e )
