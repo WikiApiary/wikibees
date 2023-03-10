@@ -213,12 +213,6 @@ class ApiaryBot:
 
     def record_error(self, site=None, log_message='Unknown Error', log_type='info', log_severity='normal', log_bot=None, log_url=None):
 
-        if self.args.verbose >= 2:
-            print( "New log message for %s" % site['pagename'] )
-
-        if self.args.verbose >= 1:
-            print( log_message )
-
         if site is None:
             site = {};
             site = {'Has ID': 0}
@@ -227,6 +221,11 @@ class ApiaryBot:
             site['pagename'] = site['Has name'];
         elif 'pagename' not in site:
             site['pagename'] = 'Error';
+        if self.args.verbose >= 2:
+            print( "New log message for %s" % site['pagename'] )
+
+        if self.args.verbose >= 1:
+            print( log_message )
 
         if log_bot is None:
             log_bot = "null"
