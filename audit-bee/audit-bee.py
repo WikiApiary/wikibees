@@ -155,7 +155,7 @@ class AuditBee(ApiaryBot):
     def audit_success(self,data,data_url,site):
         if 'query' in data:
             do_audit_extensions = self.set_audit(site, data['query']['general'])
-            audit_complete = True
+            return True
         elif 'error' in data:
             if 'code' in data['error']:
                 if data['error']['code'] == 'readapidenied':
@@ -225,7 +225,7 @@ class AuditBee(ApiaryBot):
         do_audit_extensions = False
 
         if success:
-            self.audit_success(data,data_url,site)
+            audit_complete = self.audit_success(data,data_url,site)
         else:
             self.audit_failure(data_url,site)
 
@@ -506,7 +506,7 @@ class AuditBee(ApiaryBot):
         if self.stats['audit_count'] > 0:
             message = ( "Completed audit %d sites  %d succeeded  %d failed" %
                         (self.stats['audit_count'],
-						 self.stats['audit_success'],
+                         self.stats['audit_success'],
                          self.stats['audit_failure']) )
             self.botlog(bot='Audit Bee', duration=float(duration), message=message)
 
