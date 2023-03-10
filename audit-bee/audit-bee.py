@@ -35,31 +35,37 @@ class AuditBee(ApiaryBot):
             print( "%s audit completed, updating audit date." % pagename )
 
         socket.setdefaulttimeout(30)
-        c = self.apiary_wiki.call({
-            'action': 'pfautoedit',
-            'form': 'Website',
-            'target': pagename,
-            'Website[Audited]': 'Yes',
-            'Website[Audited date]': time.strftime('%Y/%m/%d %I:%M:%S %p', time.gmtime()),
-            'wpSummary': 'audited'})
-        if self.args.verbose >= 3:
-            print( c )
-
+        try:
+            c = self.apiary_wiki.call({
+                'action': 'pfautoedit',
+                'form': 'Website',
+                'target': pagename,
+                'Website[Audited]': 'Yes',
+                'Website[Audited date]': time.strftime('%Y/%m/%d %I:%M:%S %p', time.gmtime()),
+                'wpSummary': 'audited'})
+            if self.args.verbose >= 3:
+                print( c )
+         except Exception as e:
+		print( "Exception: %s" % e )
+		
     def set_flag(self, pagename, name, value, comment):
         if self.args.verbose >= 2:
             print( "%s setting %s to %s (%s)." % (pagename, name, value, comment) )
 
         property = "Website[%s]" % name
         socket.setdefaulttimeout(30)
-        c = self.apiary_wiki.call({
-            'action': 'pfautoedit',
-            'form': 'Website',
-            'target': pagename,
-            property: value,
-            'wpSummary': comment})
-        if self.args.verbose >= 3:
-            print( c )
-
+	try:
+            c = self.apiary_wiki.call({
+                'action': 'pfautoedit',
+                'form': 'Website',
+                'target': pagename,
+                property: value,
+                'wpSummary': comment})
+            if self.args.verbose >= 3:
+                print( c )
+         except Exception as e:
+		print( "Exception: %s" % e )
+		      
     def set_audit_extensions(self, site, extensions):
         for extension in extensions:
             # Semantic statistics requires Semantic MediaWiki 1.6 or later.
@@ -217,7 +223,11 @@ class AuditBee(ApiaryBot):
         data_url = site['Has API URL'] + "?action=query&meta=siteinfo&siprop=general&format=json"
         if self.args.verbose >= 2:
             print( "Pulling general info info from %s." % data_url )
-        (success, data, duration) = self.pull_json(site, data_url, bot='Audit Bee')
+        try:
+	    (success, data, duration) = self.pull_json(site, data_url, bot='Audit Bee')
+         except Exception as e:
+		print( "Exception: %s" % e )
+		success = False
 
         audit_complete = False
         audit_extensions_complete = False
@@ -234,7 +244,12 @@ class AuditBee(ApiaryBot):
                                                "&siprop=extensions&format=json" )
             if self.args.verbose >= 2:
                 print( "Pulling extension info info from %s." % data_url )
-            (success, data, duration) = self.pull_json(site['pagename'], data_url, bot='Audit Bee')
+
+            try:
+		(success, data, duration) = self.pull_json(site['pagename'], data_url, bot='Audit Bee')
+            except Exception as e:
+		print( "Exception: %s" % e )
+		success = False
 
             if success:
                 if 'query' in data:
