@@ -64,7 +64,7 @@ class AuditBee(ApiaryBot):
             if self.args.verbose >= 3:
                 print( c )
         except Exception as e:
-		print( "Exception: %s" % e )
+		print( "Exception setting %s: %s" % (property, e) )
 		      
     def set_audit_extensions(self, site, extensions):
         for extension in extensions:
