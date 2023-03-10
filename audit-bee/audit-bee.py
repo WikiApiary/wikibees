@@ -46,6 +46,7 @@ class AuditBee(ApiaryBot):
             if self.args.verbose >= 3:
                 print( c )
         except Exception as e:
+            if self.args.verbose >= 2:    
 		print( "Exception: %s" % e )
 		
     def set_flag(self, pagename, name, value, comment):
@@ -64,7 +65,8 @@ class AuditBee(ApiaryBot):
             if self.args.verbose >= 3:
                 print( c )
         except Exception as e:
-		print( "Exception setting %s: %s" % (property, e) )
+            if self.args.verbose >= 2:
+                print( "Exception setting %s: %s" % (property, e) )
 		      
     def set_audit_extensions(self, site, extensions):
         for extension in extensions:
@@ -226,8 +228,9 @@ class AuditBee(ApiaryBot):
         try:
 	    (success, data, duration) = self.pull_json(site, data_url, bot='Audit Bee')
         except Exception as e:
-		print( "Exception: %s" % e )
-		success = False
+            if self.args.verbose >= 2:    
+                print( "Exception: %s" % e )
+            success = False
 
         audit_complete = False
         audit_extensions_complete = False
@@ -248,8 +251,9 @@ class AuditBee(ApiaryBot):
             try:
 		(success, data, duration) = self.pull_json(site['pagename'], data_url, bot='Audit Bee')
             except Exception as e:
-		print( "Exception: %s" % e )
-		success = False
+                if self.args.verbose >= 2:                
+                    print( "Exception: %s" % e )
+                success = False
 
             if success:
                 if 'query' in data:
