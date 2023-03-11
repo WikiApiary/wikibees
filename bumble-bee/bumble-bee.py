@@ -523,18 +523,18 @@ class BumbleBee(ApiaryBot):
             if key not in ignore_keys:
                 # If we have a name for this key use that
                 name = key_names.get(key, key)
-                value = x[key]
+                value = "%s" % x[key]
 
                 # These items are only included if they are true
                 if key in boolean_keys:
                     value = True
 
                 # For some items we may need to do some preprocessing
-                if isinstance(value, str):
+                else:
                     # A pipe will break the template, try HTML entity encoding it instead
-                    value = value.replace('|', '&#124;')
+                    value = value.replace('|', '{!}')
                     # Double right brackets also will break the template
-                    value = value.replace('}}', '&rcub;&rcub;')
+                    value = value.replace('}}', '} }')
                 if key == 'lang':
                     # Make sure language is all lowercase, and try to standardize structure
                     value = value.lower().replace('_', '-').replace(' ', '-')
