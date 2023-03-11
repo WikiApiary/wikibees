@@ -2,21 +2,7 @@
 """
 """
 
-import os
 import sys
-import time
-import datetime
-import pytz
-import ConfigParser
-import argparse
-import socket
-import MySQLdb as mdb
-import json as simplejson
-import urllib2
-import string
-from urllib2 import Request, urlopen, URLError, HTTPError
-from simplemediawiki import MediaWiki
-import re
 sys.path.append('../lib')
 from apiary import ApiaryBot
 
@@ -53,7 +39,7 @@ class WorkerBee(ApiaryBot):
             'minor': True,
             'token': self.edit_token
         })
-        print c
+        print( c )
 
     def UpdateTotalEdits(self):
         sql_query = """
@@ -79,9 +65,9 @@ ON
         cur.execute(sql_query)
         data = cur.fetchone()
         if self.args.verbose >= 1:
-            print "Total edits: %d" % data[0]
-            print "Total active users: %d" % data[1]
-            print "Total pages: %d" % data[2]
+            print( "Total edits: %d" % data[0] )
+            print( "Total active users: %d" % data[1] )
+            print( "Total pages: %d" % data[2] )
 
         # Update the wiki with the new value
         c = self.apiary_wiki.call({
@@ -94,7 +80,7 @@ ON
             'token': self.edit_token
         })
         if self.args.verbose >= 3:
-            print c
+            print( c )
 
         # Update the wiki with the new value
         c = self.apiary_wiki.call({
@@ -107,7 +93,7 @@ ON
             'token': self.edit_token
         })
         if self.args.verbose >= 3:
-            print c
+            print( c )
 
         # Update the wiki with the new value
         c = self.apiary_wiki.call({
@@ -120,7 +106,7 @@ ON
             'token': self.edit_token
         })
         if self.args.verbose >= 3:
-            print c
+            print( c )
 
         return True
 
@@ -132,7 +118,7 @@ WHERE log_date < DATE_SUB(NOW(), INTERVAL 4 WEEK)
 
         (success, rows_deleted) = self.runSql(sql_query)
         if self.args.verbose >= 1:
-            print "Deleted %d bot log rows." % rows_deleted
+            print( "Deleted %d bot log rows." % rows_deleted )
 
         return True
 
@@ -143,7 +129,7 @@ WHERE last_date < DATE_SUB(NOW(), INTERVAL 3 MONTH)
 """
         (success, rows_deleted) = self.runSql(sql_query)
         if self.args.verbose >= 1:
-            print "Deleted %d multiproperty rows." % rows_deleted
+            print( "Deleted %d multiproperty rows." % rows_deleted )
 
         return True
 
@@ -156,7 +142,7 @@ WHERE log_date < DATE_SUB(NOW(), INTERVAL 4 WEEK)
         (success, rows_deleted) = self.runSql(sql_query)
 
         if self.args.verbose >= 1:
-            print "Deleted %d website log rows." % rows_deleted
+            print( "Deleted %d website log rows." % rows_deleted )
 
         return True
 
@@ -173,13 +159,13 @@ WHERE log_date < DATE_SUB(NOW(), INTERVAL 4 WEEK)
 
         for page in c['query']['categorymembers']:
             # This is logged elsewhere so this is disabled to reduce email spam
-            #print "Deleting %s (%d)..." % (page['title'], page['pageid'])
+            #print( "Deleting %s (%d)..." % (page['title'], page['pageid']) )
 
             # Need a new token for every edit
             d = self.apiary_wiki.call({'action': 'query', 'meta': 'tokens'})
             self.edit_token = d['query']['tokens']['csrftoken']
             if self.args.verbose >= 1:
-                print "Edit token: %s" % self.edit_token
+                print( "Edit token: %s" % self.edit_token )
 
             e = self.apiary_wiki.call({
                 'action': 'delete',
@@ -193,7 +179,7 @@ WHERE log_date < DATE_SUB(NOW(), INTERVAL 4 WEEK)
         self.connectwiki('Worker Bee')
 
         # Now perform our jobs
-        self.UpdateTotalEdits()
+        # self.UpdateTotalEdits()
         # self.UpdateTagline()
 
         # Delete old bot_log entries
