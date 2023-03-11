@@ -848,12 +848,18 @@ class BumbleBee(ApiaryBot):
         for x in skins_sorted:
             if '*' in x:
                 # Start the template instance
-                template_block += "{{Skin in use\n"
+                include_skin = True
+                skin = "{{Skin in use\n"
                 for item in x:
                     # Loop through all the items in the skin data and build the instance
                     if item not in ignore_keys:
                         name = key_names.get(item, item)
                         value = x[item]
+
+                        if item == 'code':
+                            if value in ['fallback', 'apioutput']:
+                                include_skin = False
+                                break
 
                         if item == '*':
                             value = self.filter_illegal_chars(value)
@@ -867,12 +873,13 @@ class BumbleBee(ApiaryBot):
                             value = True
 
                         if item == 'name' and value == '':
-                            template_block += '|Remote error=No name provided for skin.\n'
+                            skin += '|Remote error=No name provided for skin.\n'
 
-                        template_block += "|%s=%s\n" % (name, value)
+                        skin += "|%s=%s\n" % (name, value)
 
                 # Now end the template instance
-                template_block += "}}\n"
+                if include_skin:
+                  template_block += skin + "}}\n"
 
         template_block += "</includeonly>"
 
