@@ -11,42 +11,33 @@ http://wikiapiary.com/wiki/User:Thingles
 http://thingelstad.com/
 """
 
-import os
 import sys
 import time
-import datetime
-import pytz
-import ConfigParser
-import argparse
 import socket
-import MySQLdb as mdb
 import json as simplejson
-import yaml
-import urllib2
-from urllib2 import Request, urlopen, URLError, HTTPError
 import re
 import gzip
-from StringIO import StringIO
-import HTMLParser
-import BeautifulSoup
+import html
+import html.parser
+from bs4 import BeautifulSoup
 import operator
-import urlparse
+import urllib.parse
 import pygeoip
-sys.path.append('../lib')
 from simplemediawiki import MediaWiki
-from apiary import ApiaryBot, FourHundred, FiveHundred, NoJSON
-from PyWhoisAPI import *
 import validators
 from xml.sax.saxutils import escape
 import traceback
+sys.path.append('../lib')
+from PyWhoisAPI import *
+from apiary import ApiaryBot, FourHundred, FiveHundred, NoJSON
 
 class BumbleBee(ApiaryBot):
     """Bot that collects statistics for sites."""
 
     def edit_page(self, datapage, template_block):
-        if datapage[:6] is 'Error/':
+        if datapage[:6] == 'Error/':
             if self.args.verbose >= 1:
-                print repr(traceback.format_stack())
+                print(repr(traceback.format_stack()))
             return
 
         socket.setdefaulttimeout(30)
@@ -55,15 +46,15 @@ class BumbleBee(ApiaryBot):
         c = self.apiary_wiki.call({'action': 'query', 'meta': 'tokens'})
         self.edit_token = c['query']['tokens']['csrftoken']
         if self.args.verbose >= 1:
-            print "Edit token: %s" % self.edit_token
+            print("Edit token: %s" % self.edit_token)
 
         c = self.apiary_wiki.call({'action': 'edit', 'title': datapage, 'text': template_block, 'token': self.edit_token, 'bot': 'true'})
         if self.args.verbose >= 4:
-            print template_block
-            print datapage
+            print(template_block)
+            print(datapage)
         if self.args.verbose >= 3:
-            print "Edited page, result below"
-            print c
+            print("Edited page, result below")
+            print(c)
 
     def parse_version(self, t):
         ver = {}
@@ -71,7 +62,7 @@ class BumbleBee(ApiaryBot):
         t = str(t)
 
         if self.args.verbose >= 3:
-            print "Getting version details for %s" % t
+            print("Getting version details for %s" % t)
 
         try:
             # Do we have a x.y.z
@@ -104,7 +95,7 @@ class BumbleBee(ApiaryBot):
             self.botlog(bot='Bumble Bee', type="warn", message="Exception %s while parsing version string %s" % (e, t))
 
         if self.args.verbose >= 2:
-            print "Version details: ", ver
+            print("Version details: ", ver)
 
         return ver
 
@@ -113,7 +104,7 @@ class BumbleBee(ApiaryBot):
             # Go out and get the statistic information
             data_url = site['Has API URL'] + '?action=query&meta=siteinfo&siprop=statistics&format=json'
             if self.args.verbose >= 2:
-                print "Pulling statistics info from %s." % data_url
+                print("Pulling statistics info from %s." % data_url)
             (status, data, duration) = self.pull_json(site, data_url)
         elif method == 'Statistics':
             status = False
@@ -124,7 +115,7 @@ class BumbleBee(ApiaryBot):
             else:
                 data_url += "?action=raw"
             if self.args.verbose >= 2:
-                print "Pulling statistics from %s." % data_url
+                print("Pulling statistics from %s." % data_url)
 
             # This is terrible and should be put into pull_json somewhow
             socket.setdefaulttimeout(15)
@@ -134,11 +125,10 @@ class BumbleBee(ApiaryBot):
             if f is not None:
                 # Create an object that is the same as that returned by the API
                 if f.info().get('Content-Encoding') == 'gzip':
-                    buf = StringIO(f.read())
-                    gz = gzip.GzipFile(fileobj=buf)
-                    ret_string = gz.read()
+                    gz = gzip.GzipFile(fileobj=f)
+                    ret_string = gz.read().decode('utf-8')
                 else:
-                    ret_string = f.read()
+                    ret_string = f.read().decode('utf-8')
                 ret_string = ret_string.strip()
                 if re.match(r'(\w+=\d+)\;?', ret_string):
                     # The return value looks as we expected
@@ -157,11 +147,11 @@ class BumbleBee(ApiaryBot):
                             if name == "good":
                                 name = "articles"
                             if self.args.verbose >= 3:
-                                print "Transforming %s to %s" % (name, value)
+                                print("Transforming %s to %s" % (name, value))
                             data['query']['statistics'][name] = value
                         except:
                             if self.args.verbose >= 3:
-                                print "Illegal value '%s' for %s." % (value, name)
+                                print("Illegal value '%s' for %s." % (value, name))
             else:
                 self.record_error(
                     site=site,
@@ -172,14 +162,14 @@ class BumbleBee(ApiaryBot):
                     log_url=data_url
                 )
                 if self.args.verbose >= 3:
-                    print "Result from statistics was not formatted as expected:\n%s" % ret_string
+                    print("Result from statistics was not formatted as expected:\n%s" % ret_string)
 
         ret_value = True
         if status:
             # Record the new data into the DB
             if self.args.verbose >= 2:
-                print "JSON: %s" % data
-                print "Duration: %s" % duration
+                print("JSON: %s" % data)
+                print("Duration: %s" % duration)
 
             if 'query' in data:
                 # Record the data received to the database
@@ -259,7 +249,7 @@ class BumbleBee(ApiaryBot):
 
         else:
             if self.args.verbose >= 3:
-                print "Did not receive valid data from %s" % (data_url)
+                print("Did not receive valid data from %s" % (data_url))
             ret_value = False
 
         # Update the status table that we did our work!
@@ -270,7 +260,7 @@ class BumbleBee(ApiaryBot):
         # Get the extended SMW usage
         data_url = site['Has API URL'] + '?action=parse&page=Project:SMWExtInfo&prop=text&disablepp=1&format=json'
         if self.args.verbose >= 2:
-            print "Pulling semantic usage info from %s." % data_url
+            print("Pulling semantic usage info from %s." % data_url)
         (status, data, duration) = self.pull_json(site, data_url)
 
         if status:
@@ -342,7 +332,7 @@ class BumbleBee(ApiaryBot):
 
         else:
             if self.args.verbose >= 3:
-                print "Did not receive valid data from %s" % (data_url)
+                print("Did not receive valid data from %s" % (data_url))
             return False
 
     def record_smwinfo(self, site):
@@ -352,15 +342,15 @@ class BumbleBee(ApiaryBot):
             '&info=propcount%7Cusedpropcount%7Cdeclaredpropcount%7Cproppagecount%7Cquerycount%7Cquerysize%7Cconceptcount%7Csubobjectcount%7Cerrorcount',
             '&format=json'])
         if self.args.verbose >= 2:
-            print "Pulling SMW info from %s." % data_url
+            print("Pulling SMW info from %s." % data_url)
         (status, data, duration) = self.pull_json(site, data_url)
 
         ret_value = True
         if status:
             # Record the new data into the DB
             if self.args.verbose >= 2:
-                print "JSON: %s" % data
-                print "Duration: %s" % duration
+                print("JSON: %s" % data)
+                print("Duration: %s" % duration)
 
             if 'info' in data:
                 # Record the data received to the database
@@ -413,7 +403,7 @@ class BumbleBee(ApiaryBot):
                     subobjectcount = 'null'
 
                 # Before inserting insure we have good data
-                if propcount is not 'null':
+                if propcount != 'null':
                     sql_command = sql_command % (
                         site['Has ID'],
                         self.sqlutcnow(),
@@ -443,7 +433,7 @@ class BumbleBee(ApiaryBot):
 
         else:
             if self.args.verbose >= 3:
-                print "Did not receive valid data from %s" % (data_url)
+                print("Did not receive valid data from %s" % (data_url))
             ret_value = False
 
         # Update the status table that we did our work!  TODO:
@@ -470,7 +460,7 @@ class BumbleBee(ApiaryBot):
             key,
             value)
         if self.args.verbose >= 3:
-            print "SQL Debug: %s" % temp_sql
+            print("SQL Debug: %s" % temp_sql)
         cur.execute(temp_sql)
         rows_returned = cur.rowcount
 
@@ -484,7 +474,7 @@ class BumbleBee(ApiaryBot):
                 self.sqlutcnow(),
                 1)
             if self.args.verbose >= 3:
-                print "SQL Debug: %s" % temp_sql
+                print("SQL Debug: %s" % temp_sql)
             cur.execute(temp_sql)
 
         # Now build the return value
@@ -540,7 +530,7 @@ class BumbleBee(ApiaryBot):
                     value = True
 
                 # For some items we may need to do some preprocessing
-                if isinstance(value, basestring):
+                if isinstance(value, str):
                     # A pipe will break the template, try HTML entity encoding it instead
                     value = value.replace('|', '&#124;')
                     # Double right brackets also will break the template
@@ -578,7 +568,7 @@ class BumbleBee(ApiaryBot):
     def record_general(self, site):
         data_url = site['Has API URL'] + "?action=query&meta=siteinfo&siprop=general&format=json"
         if self.args.verbose >= 2:
-            print "Pulling general info from %s." % data_url
+            print("Pulling general info from %s." % data_url)
         (success, data, duration) = self.pull_json(site, data_url)
         ret_value = True
         if success:
@@ -605,7 +595,7 @@ class BumbleBee(ApiaryBot):
 
     def record_whois(self, site):
         # Now that we successfully got the data, we can make a quick query to get the server info
-        hostname = urlparse.urlparse(site['Has API URL']).hostname
+        hostname = urllib.parse.urlparse(site['Has API URL']).hostname
         try:
             addr = socket.gethostbyname(hostname)
         except:
@@ -649,14 +639,14 @@ class BumbleBee(ApiaryBot):
     def record_maxmind(self, site):
         # Create the Maxmind page to put all the geographic data in
         datapage = "%s/Maxmind" % site['pagename']
-        hostname = urlparse.urlparse(site['Has API URL']).hostname
+        hostname = urllib.parse.urlparse(site['Has API URL']).hostname
         template_block = self.BuildMaxmindTemplate(hostname)
         self.edit_page(datapage, template_block)
         self.stats['maxmind'] += 1
 
 
     def build_extensions_template(self, ext_obj):
-        h = HTMLParser.HTMLParser()
+        h = html.parser.HTMLParser()
 
         # Some keys we do not want to store in WikiApiary
         ignore_keys = ['descriptionmsg']
@@ -701,7 +691,7 @@ class BumbleBee(ApiaryBot):
                             # because they cause problems when converted to unicode non-breaking spaces
                             value = value.replace('&nbsp;', ' ').replace('&#160;', ' ')
                             value = value.replace('&160;', ' ')
-                            value = h.unescape(value)
+                            value = html.unescape(value)
 
                             if value.strip() == '':
                                 template_block += '|Remote error=No name provided for extension.\n'
@@ -736,7 +726,7 @@ class BumbleBee(ApiaryBot):
                             value = re.sub(r'&nbsp;', r' ', value)
                             # Lastly, there could be HTML encoded stuff in these
                             value = self.filter_illegal_chars(value)
-                            value = h.unescape(value)
+                            value = html.unescape(value)
 
                         if item == 'url':
                             # Seems some people really really love protocol agnostic URL's
@@ -785,7 +775,7 @@ class BumbleBee(ApiaryBot):
     def record_libraries(self, site):
         data_url = site['Has API URL'] + "?action=query&meta=siteinfo&siprop=libraries&format=json"
         if self.args.verbose >= 2:
-            print "Pulling extensions and libraries from %s." % data_url
+            print("Pulling extensions and libraries from %s." % data_url)
         (success, data, duration) = self.pull_json(site, data_url)
         ret_value = True
         if success:
@@ -811,7 +801,7 @@ class BumbleBee(ApiaryBot):
     def record_extensions(self, site):
         data_url = site['Has API URL'] + "?action=query&meta=siteinfo&siprop=extensions&format=json"
         if self.args.verbose >= 2:
-            print "Pulling extensions and libraries from %s." % data_url
+            print("Pulling extensions and libraries from %s." % data_url)
         (success, data, duration) = self.pull_json(site, data_url)
         ret_value = True
         if success:
@@ -892,7 +882,7 @@ class BumbleBee(ApiaryBot):
         data_url = site['Has API URL'] + "?action=query&meta=siteinfo&siprop=skins"
         data_url += "&siinlanguagecode=en&format=json"
         if self.args.verbose >= 2:
-            print "Pulling skin info from %s." % data_url
+            print("Pulling skin info from %s." % data_url)
         (success, data, duration) = self.pull_json(site, data_url)
         ret_value = True
         if success:
@@ -961,7 +951,7 @@ class BumbleBee(ApiaryBot):
         data_url = site['Has API URL'] + "?action=query&meta=siteinfo&siprop=interwikimap"
         data_url += "&siinlanguagecode=en&format=json"
         if self.args.verbose >= 2:
-            print "Pulling interwikimap info from %s." % data_url
+            print("Pulling interwikimap info from %s." % data_url)
         (success, data, duration) = self.pull_json(site, data_url)
         ret_value = True
         if success:
@@ -1005,7 +995,7 @@ class BumbleBee(ApiaryBot):
                     value = ext_obj[x][item]
 
                     if item == 'id':
-                        if not isinstance(value, (int, long)):
+                        if not isinstance(value, int):
                             template_block += '|Remote error=Namespace ID \'%s\'' % value
                             template_block += 'is not a number.\n'
                             value = ""
@@ -1026,7 +1016,7 @@ class BumbleBee(ApiaryBot):
     def record_namespaces(self, site):
         data_url = site['Has API URL'] + "?action=query&meta=siteinfo&siprop=namespaces&format=json"
         if self.args.verbose >= 2:
-            print "Pulling namespaces info from %s." % data_url
+            print("Pulling namespaces info from %s." % data_url)
         (success, data, duration) = self.pull_json(site, data_url)
         ret_value = True
         if success:
@@ -1105,7 +1095,7 @@ class BumbleBee(ApiaryBot):
         for site in sites:
             i += 1
             if self.args.verbose >= 1:
-                print "\n\n%d: Processing %s (ID %d)" % (i, site['pagename'], site['Has ID'])
+                print("\n\n%d: Processing %s (ID %d)" % (i, site['pagename'], site['Has ID']))
             req_statistics = False
             req_general = False
             if self.args.force:
@@ -1150,7 +1140,7 @@ class BumbleBee(ApiaryBot):
                         process = "collect skin data"
                         status = self.record_skins(site)
                 if self.args.verbose >= 4:
-                    print "☃☃☃☃ Finished this step of the process: %s" % (process)
+                    print("☃☃☃☃ Finished this step of the process: %s" % (process))
             except (FiveHundred, FourHundred) as e:
                     pass
             except NoJSON as e:

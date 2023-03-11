@@ -1,17 +1,21 @@
-import os, sys, string, time, getopt, socket, select, re, errno, copy, signal
+import sys
+import string
+import socket
+import select
+import errno
 
 def queryWhois(query, server='whois.ripe.net'):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     while 1:
         try:
             s.connect((server, 43))
-        except socket.error, (ecode, reason):
+        except (socket.error, ecode, reason):
             if ecode==errno.EINPROGRESS: 
                 continue
             elif ecode==errno.EALREADY:
                 continue
             else:
-                raise socket.error, (ecode, reason)
+                raise
             pass
         break
 
@@ -19,16 +23,16 @@ def queryWhois(query, server='whois.ripe.net'):
 
     if len(ret[1])== 0 and len(ret[0]) == 0:
         s.close()
-        raise TimedOut, "on data"
+        raise RuntimeException('timed out');
 
     s.setblocking(1)
 
-    s.send("%s\n" % query)
+    s.send(("%s\n" % query).encode())
     page = ""
     while 1:
         data = s.recv(8196)
         if not data: break
-        page = page + data
+        page = page + data.decode()
         pass
 
     s.close()
@@ -44,15 +48,15 @@ def queryWhois(query, server='whois.ripe.net'):
     ]
 
     for no_match in no_match_strings:
-        if string.find(page, no_match) != -1:
-            print "found %s in result" % no_match
-            raise 'no match'
+        if page.find(no_match) != -1:
+            print("found %s in result" % no_match)
+            raise RuntimeExeption('no match')
         
     return page
     
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        print "usage: %s <IP address>" % sys.argv[0]
+        print("usage: %s <IP address>" % sys.argv[0])
         sys.exit(1)
     ip = sys.argv[1]
 
@@ -66,11 +70,11 @@ if __name__ == "__main__":
     ]
     
     for server in whois_servers:
-        print "trying %s" % server
+        print("trying %s" % server)
         try:
             res = queryWhois(ip, server)
-            print '======', server
-            print res
+            print('======', server)
+            print(res)
             break # we only need the info once
         except:
             pass

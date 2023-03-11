@@ -3,21 +3,12 @@
 Audit bee
 """
 
-import os
+import dateutil.parser
+import re
+import socket
 import sys
 import time
-import datetime
-import pytz
-import ConfigParser
-import argparse
-import socket
-import MySQLdb as mdb
-import simplejson
-import urllib2
-import dateutil.parser
-from urllib2 import Request, urlopen, URLError, HTTPError
-from simplemediawiki import MediaWiki
-import re
+import traceback
 sys.path.append('../lib')
 from apiary import ApiaryBot
 import whois
@@ -45,10 +36,10 @@ class AuditBee(ApiaryBot):
                 'wpSummary': 'audited'})
             if self.args.verbose >= 3:
                 print( c )
-        except Exception as e:
-            if self.args.verbose >= 2:    
-                print( "Exception: %s" % e )
-                
+        except:
+            if self.args.verbose >= 3:
+                traceback.print_exc()
+ 
     def set_flag(self, pagename, name, value, comment):
         if self.args.verbose >= 2:
             print( "%s setting %s to %s (%s)." % (pagename, name, value, comment) )
@@ -64,9 +55,9 @@ class AuditBee(ApiaryBot):
                 'wpSummary': comment})
             if self.args.verbose >= 3:
                 print( c )
-        except Exception as e:
-            if self.args.verbose >= 2:
-                print( "Exception setting %s: %s" % (property, e) )
+        except:
+            if self.args.verbose >= 3:
+                traceback.print_exc()
 
     def set_audit_extensions(self, site, extensions):
         for extension in extensions:
@@ -227,9 +218,9 @@ class AuditBee(ApiaryBot):
             print( "Pulling general info info from %s." % data_url )
         try:
             (success, data, duration) = self.pull_json(site, data_url, bot='Audit Bee')
-        except Exception as e:
-            if self.args.verbose >= 2:    
-                print( "Exception: %s" % e )
+        except:
+            if self.args.verbose >= 3:
+                traceback.print_exc()
             success = False
 
         audit_complete = False
@@ -250,9 +241,9 @@ class AuditBee(ApiaryBot):
 
             try:
                 (success, data, duration) = self.pull_json(site['pagename'], data_url, bot='Audit Bee')
-            except Exception as e:
-                if self.args.verbose >= 2:                
-                    print( "Exception: %s" % e )
+            except:
+                if self.args.verbose >= 3:
+                    traceback.print_exc()
                 success = False
 
             if success:
@@ -497,6 +488,8 @@ class AuditBee(ApiaryBot):
                 try:
                     self.audit_site(site)
                 except Exception as e:
+                    if self.args.verbose >= 3:
+                        traceback.print_exc()
                     self.record_error(
                         site=site,
                         log_message="Unhandled exception %s." % e,
@@ -513,6 +506,8 @@ class AuditBee(ApiaryBot):
                 try:
                     self.audit_site(site)
                 except Exception as e:
+                    if self.args.verbose >= 3:
+                        traceback.print_exc()
                     self.record_error(
                         site=site,
                         log_message="Unhandled exception %s." % e,

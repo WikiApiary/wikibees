@@ -7,9 +7,7 @@
     Questions, comments? rambasnet@gmail.com
 """
 
-import urllib2
-
-from urllib2 import HTTPError
+import urllib
 
 __author__ = "Ram Basnet <rambasnet@gmail.com>"
 __version__ = "1"
@@ -38,7 +36,7 @@ class Whois:
         #the base URL is where ARIN is hosting the whois service
         self.baseURL = 'http://whois.arin.net/rest'
 
-        self.opener = urllib2.build_opener()
+        self.opener = urllib.request.build_opener()
         if headers is not None:
             self.opener.addheaders = [('User-agent', headers)]
 
@@ -63,8 +61,8 @@ class Whois:
                 return simplejson.load(self.opener.open(url))
             else:
                 return self.opener.open(url).read()
-        except HTTPError, e:
-            raise APIError("getWhoisData() failed with a %s error code." % `e.code`)
+        except (HTTPError, e):
+            raise APIError("getWhoisData() failed with a %s error code." % e.code)
 
 
     def getPointOfContact(self, handle, format='json'):
@@ -204,8 +202,8 @@ class Whois:
 
         try:
             return self.opener.open(url).read()
-        except HTTPError, e:
-            raise APIError("getUnrelatedListOfOrgs() failed with a %s error code." % `e.code`)
+        except (HTTPError, e):
+            raise APIError("getUnrelatedListOfOrgs() failed with a %s error code." % e.code)
 
     def getUnrelatedListOfCustomers(self, **kwargs):
         """
@@ -218,8 +216,8 @@ class Whois:
         url = self.constructApiURL(self.baseURL+"/customers", kwargs)
         try:
             return self.opener.open(url).read()
-        except HTTPError, e:
-            raise APIError("getUnrelatedListOfCustomers() failed with a %s error code." % `e.code`)
+        except (HTTPError, e):
+            raise APIError("getUnrelatedListOfCustomers() failed with a %s error code." % e.code)
 
     def getUnrelatedPointOfContacts(self, **kwargs):
         """
@@ -237,8 +235,8 @@ class Whois:
         url = self.constructApiURL(self.baseURL+"/customers", kwargs)
         try:
             return self.opener.open(url).read()
-        except HTTPError, e:
-            raise APIError("getUnrelatedPointOfContacts() failed with a %s error code." % `e.code`)
+        except (HTTPError, e):
+            raise APIError("getUnrelatedPointOfContacts() failed with a %s error code." % e.code)
 
 
     def getUnrelatedListOfAutonomousSystemNumbers(self, **kwargs):
@@ -252,8 +250,8 @@ class Whois:
         url = self.constructApiURL(self.baseURL+"/asns", kwargs)
         try:
             return self.opener.open(url).read()
-        except HTTPError, e:
-            raise APIError("getUnrelatedListOfAutonomousSystemNumbers() failed with a %s error code." % `e.code`)
+        except (HTTPError, e):
+            raise APIError("getUnrelatedListOfAutonomousSystemNumbers() failed with a %s error code." % e.code)
 
 
     def getNetworkRegistrationRelatedToIP(self, IP, format='json'):
@@ -284,4 +282,4 @@ if __name__ == "__main__":
 
     #print whois.getUnrelatedListOfOrgs(name='ARIN*')
     #print whois.getNetworkRegistrationRelatedToIP('192.149.252.75', format='json')
-    print whois.getNetworkRegistrationRelatedToCIDR('192.149.252.0/24', prefix='more')
+    print(whois.getNetworkRegistrationRelatedToCIDR('192.149.252.0/24', prefix='more'))

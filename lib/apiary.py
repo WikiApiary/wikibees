@@ -7,23 +7,20 @@ http://wikiapiary.com/wiki/User:Thingles
 http://thingelstad.com/
 """
 
-import os
-import sys
 import time
 import datetime
 import pytz
-import ConfigParser
+import configparser
 import argparse
 import socket
-import MySQLdb as mdb
+import pymysql.cursors
 import json as simplejson
-import urllib2
 import ssl
 import random
 import re
 import gzip
-from StringIO import StringIO
-from urllib2 import Request, urlopen, URLError, HTTPError
+from io import StringIO
+import urllib
 from simplemediawiki import MediaWiki
 
 def list_get(L, i, v=False):
@@ -77,7 +74,7 @@ class ApiaryBot:
 
     def get_config(self, config_file='../apiary.cfg'):
         try:
-            self.config = ConfigParser.ConfigParser()
+            self.config = configparser.ConfigParser()
             self.config.read(config_file)
         except IOError:
             print( "Cannot open %s." % config_file )
@@ -106,10 +103,10 @@ class ApiaryBot:
         return now.strftime('%Y-%m-%d %H:%M:%S')
 
     def make_request(self, site, data_url, bot='Bumble Bee'):
-        req = urllib2.Request(data_url)
+        req = urllib.request.Request(data_url)
         req.add_header('User-Agent', self.config.get(bot, 'User-Agent'))
         req.add_header('Accept-Encoding', 'gzip')
-        opener = urllib2.build_opener()
+        opener = urllib.request.build_opener()
 
         try:
             t1 = datetime.datetime.now()
@@ -126,7 +123,7 @@ class ApiaryBot:
                 log_url=data_url
                 )
             return None, None
-        except urllib2.URLError as e:
+        except urllib.request.URLError as e:
             self.record_error(
                 site=site,
                 log_message="URLError: %s" % e,
@@ -136,7 +133,7 @@ class ApiaryBot:
                 log_url=data_url
                 )
             return None, None
-        except urllib2.HTTPError as e:
+        except urllib.request.HTTPError as e:
             if e.code > 399 and e.code < 500:
                 raise FourHundred( e )
             if e.code > 499 and e.code < 600:
@@ -176,11 +173,10 @@ class ApiaryBot:
             # The regex here is really simple, but it seems to
             # work fine.
             if f.info().get('Content-Encoding') == 'gzip':
-                buf = StringIO(f.read())
-                gz = gzip.GzipFile(fileobj=buf)
-                ret_string = gz.read()
+                gz = gzip.GzipFile(fileobj=f)
+                ret_string = gz.read().decode('utf-8')
             else:
-                ret_string = f.read()
+                ret_string = f.read().decode('utf-8')
             json_match = re.search(r"({.*})", ret_string, flags=re.MULTILINE)
             if json_match is None or json_match.group(1) is None:
                 raise NoJSON( data_url + "||" + ret_string )
@@ -271,7 +267,7 @@ class ApiaryBot:
     def connectdb(self):
         # Setup our database connection
         # Use the account that can also insert and delete from the database
-        self.apiary_db = mdb.connect(
+        self.apiary_db = pymysql.connect(
             host=self.config.get('ApiaryDB', 'hostname'),
             db=self.config.get('ApiaryDB', 'database'),
             user=self.config.get('ApiaryDB RW', 'username'),
