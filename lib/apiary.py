@@ -81,7 +81,7 @@ class ApiaryBot:
 
     def get_args(self):
         parser = argparse.ArgumentParser(prog="Bumble Bee", description="retrieves usage and statistic information for WikiApiary")
-        parser.add_argument("-s", "--segment", help="only work on websites in defined segment")
+        parser.add_argument("-s", "--segment", help="only work on websites in defined segment (<bot segment id> or <day segment id (0-6)>:<hour segment id (0-23)>)")
         parser.add_argument("--site", help="only work on this specific site id")
         parser.add_argument("-f", "--force", action="store_true", help="run regardless of when the last time data was updated")
         parser.add_argument("-d", "--debug", action="store_true", help="do not write any changes to wiki or database")
@@ -289,9 +289,12 @@ class ApiaryBot:
             filter_string = "[[Has ID::%d]]" % int(site)
         elif segment is not None:
             if self.args.verbose >= 1:
-                print( "Only retrieving segment %d." % int(self.args.segment) )
-            filter_string = "[[Has bot segment::%d]]" % int(self.args.segment)
-            #filter_string = "test"
+                segments = self.args.segment.split(':')
+                if len(segments) > 1:
+                    filter_string = "[[Has day segment::%d]][[Has hour segment::%d]]" % (int(segments[0]), int(segments[1]))
+                else:
+                    filter_string = "[[Has bot segment::%d]]" % int(self.args.segment)
+                print( "Only retrieving segments matching %s." % filter_string )
 
         # Build query for sites
         my_query = ''.join([
@@ -385,6 +388,8 @@ class ApiaryBot:
                                 log_bot='apiary.py',
                                 log_url=data_url
                             )
+                if self.args.verbose >= 3:
+                    print("Found %d sites to work on." % len(my_sites))
                 return my_sites
             else:
                 raise Exception("No sites were returned to work on.")

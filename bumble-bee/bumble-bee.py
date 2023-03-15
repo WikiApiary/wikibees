@@ -618,6 +618,8 @@ class BumbleBee(ApiaryBot):
                 self.ProcessMultiprops(site['Has ID'], 'reverse_host', reverse_host)
             )
         except:
+            if self.args.verbose >= 3:
+                traceback.print_exc()
             pass
 
         # Now lets get the netblock information
@@ -1048,8 +1050,7 @@ class BumbleBee(ApiaryBot):
         if self.args.site is not None:
             message = "Starting processing for site %d." % int(self.args.site)
         elif self.args.segment is not None:
-            message = "Starting processing for segment %d." % int(self.args.segment)
-            #message = "test"
+            message = "Starting processing for segment %s." % self.args.segment
         else:
             message = "Starting processing for all websites."
         thisBot = 'Bumble Bee'
@@ -1084,7 +1085,7 @@ class BumbleBee(ApiaryBot):
         if sites is None:
             section = "all websites."
             if self.args.segment is not None:
-                section = "segment %d." % int(self.args.segment)
+                section = "segment %s." % self.args.segment
             message = "No sites to process for " + section
             duration = time.time() - start_time
             self.botlog(bot=thisBot, duration=float(duration), message=message)
@@ -1172,7 +1173,7 @@ class BumbleBee(ApiaryBot):
 
         duration = time.time() - start_time
         if self.args.segment is not None:
-            message = "Completed processing for segment %d." % int(self.args.segment)
+            message = "Completed processing for segment %s." % self.args.segment
         else:
             message = "Completed processing for all websites."
         message += " Processed %d websites." % i
