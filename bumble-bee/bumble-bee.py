@@ -56,7 +56,7 @@ class BumbleBee(ApiaryBot):
             print("Edited page, result below")
             print(c)
 
-    def parse_version(self, t):
+    def parse_version(self, t, site):
         ver = {}
 
         t = str(t)
@@ -78,8 +78,8 @@ class BumbleBee(ApiaryBot):
             if not ver.get('major', None):
                 # Do we have a YYYY-MM-DD
                 if re.match(r'\d{4}-\d{2}-\d{2}', t):
-                    y = re.findall(r'(\d+)', t)
-                    (ver['major'], ver['minor'], ver['bugfix']) = y
+                    y = re.findall(r'(\d{4})-(\d{2})-(\d{2})', t)
+                    (ver['major'], ver['minor'], ver['bugfix']) = y[0]
 
             if not ver.get('major', None):
                 # Do we have a YYYYMMDD
@@ -92,7 +92,12 @@ class BumbleBee(ApiaryBot):
             if y:
                 ver['flag'] = y.group(1)
         except Exception as e:
-            self.botlog(bot='Bumble Bee', type="warn", message="Exception %s while parsing version string %s" % (e, t))
+            self.record_error(
+                site=site,
+                log_message="Exception %s while parsing version string %s" % (e, t),
+                log_type='warn',
+                log_bot='Bumble Bee'
+            )
 
         if self.args.verbose >= 2:
             print("Version details: ", ver)
@@ -647,7 +652,7 @@ class BumbleBee(ApiaryBot):
         self.stats['maxmind'] += 1
 
 
-    def build_extensions_template(self, ext_obj):
+    def build_extensions_template(self, ext_obj, site):
         h = html.parser.HTMLParser()
 
         # Some keys we do not want to store in WikiApiary
@@ -700,7 +705,7 @@ class BumbleBee(ApiaryBot):
 
                         if item == 'version':
                             # Breakdown the version information for more detailed analysis
-                            ver_details = self.parse_version(value)
+                            ver_details = self.parse_version(value, site)
                             if 'major' in ver_details:
                                 template_block += "|Extension version major=%s\n" % ver_details['major']
                             if 'minor' in ver_details:
@@ -812,7 +817,7 @@ class BumbleBee(ApiaryBot):
 
                 if 'extensions' in data['query']:
                     datapage = "%s/Extensions" % site['pagename']
-                    template_block = self.build_extensions_template(data['query']['extensions'])
+                    template_block = self.build_extensions_template(data['query']['extensions'], site)
                     self.edit_page(datapage, template_block)
                     self.stats['extensions'] += 1
 
@@ -1099,9 +1104,17 @@ class BumbleBee(ApiaryBot):
             )
             return
 
+        total_sites = len(sites)
+        duration = time.time() - start_time
+        message = "Processing %d sites." % total_sites
+        self.botlog(bot=thisBot, duration=float(duration), message=message)
         i = 0
         for site in sites:
             i += 1
+            if i % 500 == 0:
+                duration = time.time() - start_time
+                message = "Processed %d of %d sites." % (i, total_sites)
+                self.botlog(bot=thisBot, duration=float(duration), message=message)
             if self.args.verbose >= 1:
                 print("\n\n%d: Processing %s (ID %d)" % (i, site['pagename'], site['Has ID']))
             req_statistics = False
