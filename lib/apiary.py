@@ -288,12 +288,12 @@ class ApiaryBot:
                 print( "Processing site %d." % int(site) )
             filter_string = "[[Has ID::%d]]" % int(site)
         elif segment is not None:
+            segments = self.args.segment.split(':')
+            if len(segments) > 1:
+                filter_string = "[[Has day segment::%d]][[Has hour segment::%d]]" % (int(segments[0]), int(segments[1]))
+            else:
+                filter_string = "[[Has bot segment::%d]]" % int(self.args.segment)
             if self.args.verbose >= 1:
-                segments = self.args.segment.split(':')
-                if len(segments) > 1:
-                    filter_string = "[[Has day segment::%d]][[Has hour segment::%d]]" % (int(segments[0]), int(segments[1]))
-                else:
-                    filter_string = "[[Has bot segment::%d]]" % int(self.args.segment)
                 print( "Only retrieving segments matching %s." % filter_string )
 
         # Build query for sites
