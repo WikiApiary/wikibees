@@ -33,6 +33,7 @@ class AuditBee(ApiaryBot):
                 'target': pagename,
                 'Website[Audited]': 'Yes',
                 'Website[Audited date]': time.strftime('%Y/%m/%d %I:%M:%S %p', time.gmtime()),
+                'bot': '',
                 'wpSummary': 'audited'})
             if self.args.verbose >= 3:
                 print( c )
@@ -52,6 +53,7 @@ class AuditBee(ApiaryBot):
                 'form': 'Website',
                 'target': pagename,
                 property: value,
+                'bot': '',
                 'wpSummary': comment})
             if self.args.verbose >= 3:
                 print( c )
