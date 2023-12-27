@@ -18,3 +18,11 @@
 0 * * * *     (cd ~/wikibots/WikiApiary/audit-bee/; nice -n 10 ./audit-bee.py)
 # Backup Bee
 1 * * * *        (cd ~/wikibots/WikiApiary/backup-bee/; nice -n 19 ./backup-bee.py)
+
+# The one we temporarily had on the scripts host:
+# Bumble Bee
+20 * * * *     wikibees (cd /srv/wikibees/bumble-bee/; nice -n 19 python3 bumble-bee.py -s `date '+\%w:\%H'`)
+# Audit Bee
+50 * * * *     wikibees (cd /srv/wikibees/audit-bee/; nice -n 10 python3 audit-bee.py)
+# Worker Bee
+]0 0 * * *      wikibees (cd /srv/wikibees/maint/; nice -n 19 python3 worker-bee.py)
