@@ -192,6 +192,10 @@ class ApiaryBot:
     def runSql(self, sql_command, args = None):
         if self.args.verbose >= 3:
             print( "SQL: %s" % sql_command )
+        if getattr(self.args, 'debug', False):
+            if self.args.verbose >= 1:
+                print( "DEBUG: suppressed DB write: %s" % sql_command )
+            return True, 0
         try:
             cur = self.apiary_db.cursor()
             cur.execute('SET NAMES utf8mb4')
@@ -275,10 +279,13 @@ class ApiaryBot:
             charset='utf8')
 
     def connectwiki(self, bot_name):
-        self.apiary_wiki = MediaWiki(self.config.get('WikiApiary', 'API'))
+        self.apiary_wiki = MediaWiki(
+            self.config.get('WikiApiary', 'API'),
+            user_agent=self.config.get('Bumble Bee', 'user-agent')
+        )
         c = self.apiary_wiki.login(self.config.get(bot_name, 'Username'), self.config.get(bot_name, 'Password'))
         if self.args.verbose >= 1:
-            print( "Username: %s Password: %s" % (self.config.get(bot_name, 'Username'), self.config.get(bot_name, 'Password')) )
+            print( "Logged in to WikiApiary as %s" % self.config.get(bot_name, 'Username') )
             print( c )
 
     def get_websites(self, segment, site):
@@ -324,6 +331,7 @@ class ApiaryBot:
         try:
             sites = self.apiary_wiki.call({'action': 'ask', 'query': my_query})
         except Exception as e:
+            print("ERROR: Problem querying WikiApiary: %s" % e, file=sys.stderr)
             self.record_error(
                 log_message="Problem querying Wikiapiary: %s" % e,
                 log_type='error',

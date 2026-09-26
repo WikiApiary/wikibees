@@ -22,7 +22,10 @@ import html.parser
 from bs4 import BeautifulSoup
 import operator
 import urllib.parse
-import pygeoip
+try:
+    import pygeoip
+except ImportError:
+    pygeoip = None
 from simplemediawiki import MediaWiki
 import validators
 from xml.sax.saxutils import escape
@@ -40,7 +43,12 @@ class BumbleBee(ApiaryBot):
                 print(repr(traceback.format_stack()))
             return
 
-        socket.setdefaulttimeout(30)
+        if getattr(self.args, 'debug', False):
+            if self.args.verbose >= 1:
+                print( "DEBUG: suppressed wiki edit of %s" % datapage )
+            return
+
+        socket.setdefaulttimeout(120)
         # We need an edit token
         #c = self.apiary_wiki.call({'action': 'query', 'titles': 'Foo', 'prop': 'info', 'intoken': 'edit'})
         c = self.apiary_wiki.call({'action': 'query', 'meta': 'tokens'})
