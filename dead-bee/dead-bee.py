@@ -234,19 +234,21 @@ class DeadBee(ApiaryBot):
             else:
                 raw = response.read().decode('utf-8')
             if self.is_protected(response, raw):
-                return None, 'protected by CDN/WAF'
+                return None, 'protected by CDN/WAF', True
             json_match = re.search(r"({.*})", raw, flags=re.MULTILINE)
             if json_match is None:
-                return None, 'non-JSON body'
+                return None, 'non-JSON body', False
             try:
-                return json.loads(json_match.group(1)), None
+                return json.loads(json_match.group(1)), None, False
             except ValueError as e:
-                return None, 'JSON parse error: %s' % e
+                return None, 'JSON parse error: %s' % e, False
 
         try:
             socket.setdefaulttimeout(self.args.timeout)
             with opener.open(req) as response:
-                json_data, err = decode_response(response)
+                json_data, err, protected = decode_response(response)
+                if protected:
+                    return ('protected', err)
                 if json_data is None:
                     return ('not_mediawiki', err)
                 if 'query' in json_data and 'general' in json_data['query']:
@@ -259,7 +261,9 @@ class DeadBee(ApiaryBot):
                 return ('not_mediawiki', 'JSON missing expected MediaWiki structure')
         except urllib.error.HTTPError as e:
             try:
-                json_data, err = decode_response(e)
+                json_data, err, protected = decode_response(e)
+                if protected:
+                    return ('protected', err)
                 if json_data is None:
                     return ('not_mediawiki', 'HTTP %d %s' % (e.code, e.reason))
                 if 'error' in json_data:
