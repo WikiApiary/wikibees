@@ -8,6 +8,7 @@ immediately and across runs.
 """
 
 import argparse
+import atexit
 import gzip
 import json
 import os
@@ -31,9 +32,45 @@ class DeadBee(ApiaryBot):
         self.config = None
         self.apiary_wiki = None
         self.apiary_db = None
+        self.lock_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'dead-bee.lock')
         self.get_args()
+        self.acquire_lock()
         self.get_config(self.args.config)
         self.connectdb()
+
+    def acquire_lock(self):
+        """Ensure only one Dead Bee process runs. Exit if another is alive."""
+        if os.path.exists(self.lock_path):
+            try:
+                with open(self.lock_path, 'r') as f:
+                    old_pid = int(f.read().strip())
+                if old_pid != os.getpid():
+                    try:
+                        os.kill(old_pid, 0)
+                        print("Dead Bee already running (PID %d). Exiting." % old_pid, file=sys.stderr)
+                        sys.exit(0)
+                    except OSError:
+                        # stale lock
+                        pass
+            except (ValueError, OSError):
+                pass
+        try:
+            with open(self.lock_path, 'w') as f:
+                f.write(str(os.getpid()))
+            atexit.register(self.release_lock)
+        except Exception as e:
+            print("WARNING: could not create lock file %s: %s" % (self.lock_path, e), file=sys.stderr)
+
+    def release_lock(self):
+        """Remove lock file on exit."""
+        try:
+            if os.path.exists(self.lock_path):
+                with open(self.lock_path, 'r') as f:
+                    pid = f.read().strip()
+                if pid == str(os.getpid()):
+                    os.remove(self.lock_path)
+        except Exception:
+            pass
 
     def get_args(self):
         parser = argparse.ArgumentParser(
