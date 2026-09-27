@@ -40,6 +40,7 @@ class DeadBee(ApiaryBot):
         )
         parser.add_argument("--site", type=int, help="only check this specific site id")
         parser.add_argument("--limit", type=int, default=0, help="max sites to check (0 = unlimited)")
+        parser.add_argument("--offset", type=int, default=0, help="skip the first N sites returned by WikiApiary")
         parser.add_argument("--threshold", type=int, default=3,
                             help="consecutive failures before marking defunct (default 3)")
         parser.add_argument("--timeout", type=int, default=30, help="probe timeout in seconds")
@@ -122,7 +123,9 @@ class DeadBee(ApiaryBot):
                 if self.args.verbose >= 1:
                     print("WARNING: failed to parse %s: %s" % (pagename, e))
 
-        if self.args.limit and len(my_sites) > self.args.limit:
+        if self.args.offset:
+            my_sites = my_sites[self.args.offset:]
+        if self.args.limit:
             my_sites = my_sites[:self.args.limit]
 
         return my_sites
@@ -187,7 +190,25 @@ class DeadBee(ApiaryBot):
                     return ('http_error', 'api error %s' % code)
                 return ('not_mediawiki', 'JSON missing expected MediaWiki structure')
         except urllib.error.HTTPError as e:
-            return ('http_error', 'HTTP %d %s' % (e.code, e.reason))
+            # An API endpoint should return JSON even on errors. If it returns
+            # HTML or plain text, the site is probably not MediaWiki anymore.
+            try:
+                if e.info().get('Content-Encoding') == 'gzip':
+                    body = gzip.GzipFile(fileobj=e).read().decode('utf-8')
+                else:
+                    body = e.read().decode('utf-8')
+                json_match = re.search(r"({.*})", body, flags=re.MULTILINE)
+                if json_match is None:
+                    return ('not_mediawiki', 'HTTP %d returned non-JSON body' % e.code)
+                json_data = json.loads(json_match.group(1))
+                if 'error' in json_data:
+                    code = json_data['error'].get('code', 'unknown')
+                    if code in ('readapidenied', 'unsupportednamespace', 'unknown_action'):
+                        return ('ok', 'api error %s but MediaWiki present' % code)
+                    return ('http_error', 'HTTP %d api error %s' % (e.code, code))
+                return ('not_mediawiki', 'HTTP %d JSON missing MediaWiki structure' % e.code)
+            except Exception:
+                return ('not_mediawiki', 'HTTP %d %s (non-JSON body)' % (e.code, e.reason))
         except urllib.error.URLError as e:
             reason = str(e.reason)
             if 'timed out' in reason.lower() or 'timeout' in reason.lower():
