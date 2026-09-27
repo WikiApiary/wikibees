@@ -1067,6 +1067,7 @@ class BumbleBee(ApiaryBot):
         else:
             message = "Starting processing for all websites."
         thisBot = 'Bumble Bee'
+        print(message)
         self.botlog(thisBot, message=message)
 
         # Record time at beginning
@@ -1101,6 +1102,7 @@ class BumbleBee(ApiaryBot):
                 section = "segment %s." % self.args.segment
             message = "No sites to process for " + section
             duration = time.time() - start_time
+            print(message)
             self.botlog(bot=thisBot, duration=float(duration), message=message)
             self.record_error(
                 site=site,
@@ -1210,6 +1212,7 @@ class BumbleBee(ApiaryBot):
             self.stats['interwikimap'], self.stats['namespaces'],
             self.stats['libraries']
         )
+        print(message)
         self.botlog(bot=thisBot, duration=float(duration), message=message)
 
 
