@@ -2,10 +2,13 @@
 """Dead Bee - identify and mark defunct WikiApiary websites.
 
 Probes the API URL of active websites and marks them defunct in the wiki
-after a configurable number of consecutive probe failures.
+after a configurable number of consecutive probe failures. Failure counts
+are stored in the apiary.dead_bee_failures DB table so they persist
+immediately and across runs.
 """
 
 import argparse
+import gzip
 import json
 import os
 import re
@@ -15,7 +18,6 @@ import time
 import traceback
 import urllib.error
 import urllib.parse
-import gzip
 import urllib.request
 
 sys.path.append('../lib')
@@ -48,31 +50,73 @@ class DeadBee(ApiaryBot):
                             help="do not write any changes to wiki or database")
         parser.add_argument("--config", default="../bumble-bee/apiary.cfg",
                             help="path to apiary.cfg (default ../bumble-bee/apiary.cfg)")
-        parser.add_argument("--state", default="dead-bee-state.json",
-                            help="path to JSON state file tracking failure counts")
         parser.add_argument("-v", "--verbose", action="count", default=0,
                             help="increase output verbosity")
         self.args = parser.parse_args()
 
-    def load_state(self):
-        if os.path.exists(self.args.state):
-            try:
-                with open(self.args.state) as f:
-                    return json.load(f)
-            except Exception as e:
-                print("WARNING: could not load state file %s: %s" % (self.args.state, e))
-        return {}
+    def get_failure_count(self, website_id):
+        """Return current consecutive failure count from DB."""
+        try:
+            cur = self.apiary_db.cursor()
+            cur.execute(
+                "SELECT consecutive_failures FROM dead_bee_failures WHERE website_id = %s",
+                (website_id,)
+            )
+            row = cur.fetchone()
+            cur.close()
+            return row[0] if row else 0
+        except Exception as e:
+            print("WARNING: could not read failure count for %s: %s" % (website_id, e), file=sys.stderr)
+            return 0
 
-    def save_state(self, state):
+    def record_failure(self, site, reason):
+        """Increment consecutive failure count in DB and return new count."""
+        website_id = site['Has ID']
+        now = time.strftime('%Y-%m-%d %H:%M:%S')
+        if self.args.debug:
+            return self.get_failure_count(website_id) + 1
+        try:
+            cur = self.apiary_db.cursor()
+            cur.execute('SET NAMES utf8mb4')
+            sql = (
+                "INSERT INTO dead_bee_failures "
+                "(website_id, consecutive_failures, last_failure_date, last_failure_reason, last_check_date) "
+                "VALUES (%s, 1, %s, %s, %s) "
+                "ON DUPLICATE KEY UPDATE "
+                "consecutive_failures = consecutive_failures + 1, "
+                "last_failure_date = %s, "
+                "last_failure_reason = %s, "
+                "last_check_date = %s"
+            )
+            cur.execute(sql, (website_id, now, reason, now, now, reason, now))
+            self.apiary_db.commit()
+            cur.execute(
+                "SELECT consecutive_failures FROM dead_bee_failures WHERE website_id = %s",
+                (website_id,)
+            )
+            count = cur.fetchone()[0]
+            cur.close()
+            return count
+        except Exception as e:
+            print("WARNING: could not record failure for %s: %s" % (website_id, e), file=sys.stderr)
+            return self.get_failure_count(website_id) + 1
+
+    def record_success(self, site):
+        """Clear failure count for a site that responded successfully."""
+        website_id = site['Has ID']
         if self.args.debug:
             return
         try:
-            tmp = self.args.state + ".tmp"
-            with open(tmp, "w") as f:
-                json.dump(state, f, indent=2, sort_keys=True)
-            os.replace(tmp, self.args.state)
+            cur = self.apiary_db.cursor()
+            cur.execute('SET NAMES utf8mb4')
+            cur.execute(
+                "DELETE FROM dead_bee_failures WHERE website_id = %s",
+                (website_id,)
+            )
+            self.apiary_db.commit()
+            cur.close()
         except Exception as e:
-            print("WARNING: could not save state file %s: %s" % (self.args.state, e))
+            print("WARNING: could not clear failures for %s: %s" % (website_id, e), file=sys.stderr)
 
     def get_sites(self):
         """Fetch active, non-defunct websites from WikiApiary."""
@@ -140,12 +184,12 @@ class DeadBee(ApiaryBot):
             socket.getaddrinfo(parsed.hostname, None)
             return (True, '')
         except socket.gaierror as e:
-            return (False, 'DNS failure: %s' % e.strerror if e.strerror else 'DNS failure')
+            return (False, 'DNS failure: %s' % (e.strerror if e.strerror else 'unknown'))
         except Exception as e:
             return (False, 'DNS check error: %s' % e)
 
     def probe_site(self, site):
-        """Return (status, detail) where status is one of: ok, unreachable, http_error, not_mediawiki, timeout, error."""
+        """Return (status, detail)."""
         url = site['Has API URL']
         if not url:
             return ('unreachable', 'no API URL')
@@ -164,23 +208,25 @@ class DeadBee(ApiaryBot):
         req.add_header('Accept-Encoding', 'gzip')
         opener = urllib.request.build_opener()
 
+        def decode_response(response):
+            if response.info().get('Content-Encoding') == 'gzip':
+                raw = gzip.GzipFile(fileobj=response).read().decode('utf-8')
+            else:
+                raw = response.read().decode('utf-8')
+            json_match = re.search(r"({.*})", raw, flags=re.MULTILINE)
+            if json_match is None:
+                return None, 'non-JSON body'
+            try:
+                return json.loads(json_match.group(1)), None
+            except ValueError as e:
+                return None, 'JSON parse error: %s' % e
+
         try:
             socket.setdefaulttimeout(self.args.timeout)
             with opener.open(req) as response:
-                if response.info().get('Content-Encoding') == 'gzip':
-                    raw = gzip.GzipFile(fileobj=response).read().decode('utf-8')
-                else:
-                    raw = response.read().decode('utf-8')
-
-                json_match = re.search(r"({.*})", raw, flags=re.MULTILINE)
-                if json_match is None:
-                    return ('not_mediawiki', 'response is not JSON')
-
-                try:
-                    json_data = json.loads(json_match.group(1))
-                except ValueError as e:
-                    return ('not_mediawiki', 'JSON parse error: %s' % e)
-
+                json_data, err = decode_response(response)
+                if json_data is None:
+                    return ('not_mediawiki', err)
                 if 'query' in json_data and 'general' in json_data['query']:
                     return ('ok', json_data['query']['general'].get('generator', 'MediaWiki'))
                 if 'error' in json_data:
@@ -190,17 +236,10 @@ class DeadBee(ApiaryBot):
                     return ('http_error', 'api error %s' % code)
                 return ('not_mediawiki', 'JSON missing expected MediaWiki structure')
         except urllib.error.HTTPError as e:
-            # An API endpoint should return JSON even on errors. If it returns
-            # HTML or plain text, the site is probably not MediaWiki anymore.
             try:
-                if e.info().get('Content-Encoding') == 'gzip':
-                    body = gzip.GzipFile(fileobj=e).read().decode('utf-8')
-                else:
-                    body = e.read().decode('utf-8')
-                json_match = re.search(r"({.*})", body, flags=re.MULTILINE)
-                if json_match is None:
-                    return ('not_mediawiki', 'HTTP %d returned non-JSON body' % e.code)
-                json_data = json.loads(json_match.group(1))
+                json_data, err = decode_response(e)
+                if json_data is None:
+                    return ('not_mediawiki', 'HTTP %d %s' % (e.code, e.reason))
                 if 'error' in json_data:
                     code = json_data['error'].get('code', 'unknown')
                     if code in ('readapidenied', 'unsupportednamespace', 'unknown_action'):
@@ -208,7 +247,7 @@ class DeadBee(ApiaryBot):
                     return ('http_error', 'HTTP %d api error %s' % (e.code, code))
                 return ('not_mediawiki', 'HTTP %d JSON missing MediaWiki structure' % e.code)
             except Exception:
-                return ('not_mediawiki', 'HTTP %d %s (non-JSON body)' % (e.code, e.reason))
+                return ('not_mediawiki', 'HTTP %d %s' % (e.code, e.reason))
         except urllib.error.URLError as e:
             reason = str(e.reason)
             if 'timed out' in reason.lower() or 'timeout' in reason.lower():
@@ -272,38 +311,34 @@ class DeadBee(ApiaryBot):
 
         print("Found %d sites to check." % len(sites))
 
-        state = self.load_state()
         checked = 0
         marked = 0
         failed = 0
+        tracked = 0
 
         for site in sites:
             checked += 1
-            sid = str(site['Has ID'])
             status, detail = self.probe_site(site)
 
             if status == 'ok':
-                if sid in state:
-                    del state[sid]
+                self.record_success(site)
                 if self.args.verbose >= 1:
                     print("OK: %s (%s): %s" % (site['pagename'], site['Has API URL'], detail))
             else:
-                count = state.get(sid, 0) + 1
-                state[sid] = count
+                count = self.record_failure(site, detail)
+                tracked += 1
                 print("FAIL: %s (%s): %s (consecutive failures: %d)" % (
                     site['pagename'], site['Has API URL'], detail, count))
 
                 if count >= self.args.threshold:
                     if self.mark_defunct(site, detail):
                         marked += 1
-                        del state[sid]
+                        self.record_success(site)
                     else:
                         failed += 1
 
-        self.save_state(state)
-
         finish_message = ("Completed Dead Bee. Checked %d sites, marked %d defunct, %d mark failures, "
-                          "%d tracked failures.") % (checked, marked, failed, len(state))
+                          "%d failures tracked in DB.") % (checked, marked, failed, tracked)
         print(finish_message)
 
 
