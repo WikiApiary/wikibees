@@ -174,6 +174,26 @@ class DeadBee(ApiaryBot):
 
         return my_sites
 
+    def is_protected(self, response, body):
+        """Detect CDN/WAF protection that blocks bots (Cloudflare, Alibaba ESA, etc.)."""
+        headers = {}
+        try:
+            headers = dict(response.info())
+        except Exception:
+            pass
+        server = headers.get('Server', '').lower()
+        via = headers.get('Via', '').lower()
+        cf_ray = headers.get('CF-RAY') or headers.get('Cf-Ray')
+        if 'cloudflare' in server or cf_ray or 'cloudflare' in via:
+            return True
+        if 'esa' in server or 'ens-cache' in via:
+            return True
+        # Common challenge markers in body
+        lowered = body.lower()
+        if any(x in lowered for x in ['checking your browser', 'ddos-guard', 'under attack', 'attention required']):
+            return True
+        return False
+
     def resolve_hostname(self, url):
         """Return (True, '') if hostname resolves, (False, reason) otherwise."""
         try:
@@ -213,6 +233,8 @@ class DeadBee(ApiaryBot):
                 raw = gzip.GzipFile(fileobj=response).read().decode('utf-8')
             else:
                 raw = response.read().decode('utf-8')
+            if self.is_protected(response, raw):
+                return None, 'protected by CDN/WAF'
             json_match = re.search(r"({.*})", raw, flags=re.MULTILINE)
             if json_match is None:
                 return None, 'non-JSON body'
@@ -325,17 +347,20 @@ class DeadBee(ApiaryBot):
                 if self.args.verbose >= 1:
                     print("OK: %s (%s): %s" % (site['pagename'], site['Has API URL'], detail))
             else:
-                count = self.record_failure(site, detail)
-                tracked += 1
-                print("FAIL: %s (%s): %s (consecutive failures: %d)" % (
-                    site['pagename'], site['Has API URL'], detail, count))
+                if status == 'protected':
+                    print("PROTECTED: %s (%s): %s" % (site['pagename'], site['Has API URL'], detail))
+                else:
+                    count = self.record_failure(site, detail)
+                    tracked += 1
+                    print("FAIL: %s (%s): %s (consecutive failures: %d)" % (
+                        site['pagename'], site['Has API URL'], detail, count))
 
-                if count >= self.args.threshold:
-                    if self.mark_defunct(site, detail):
-                        marked += 1
-                        self.record_success(site)
-                    else:
-                        failed += 1
+                    if count >= self.args.threshold:
+                        if self.mark_defunct(site, detail):
+                            marked += 1
+                            self.record_success(site)
+                        else:
+                            failed += 1
 
         finish_message = ("Completed Dead Bee. Checked %d sites, marked %d defunct, %d mark failures, "
                           "%d failures tracked in DB.") % (checked, marked, failed, tracked)
