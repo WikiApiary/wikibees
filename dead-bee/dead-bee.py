@@ -385,8 +385,7 @@ class DeadBee(ApiaryBot):
 
             if status == 'ok':
                 self.record_success(site)
-                if self.args.verbose >= 1:
-                    print("OK: %s (%s): %s" % (site['pagename'], site['Has API URL'], detail))
+                print("OK: %s (%s): %s" % (site['pagename'], site['Has API URL'], detail))
             else:
                 if status == 'protected':
                     print("PROTECTED: %s (%s): %s" % (site['pagename'], site['Has API URL'], detail))
