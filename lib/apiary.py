@@ -273,9 +273,9 @@ class ApiaryBot:
         # Use the account that can also insert and delete from the database
         self.apiary_db = pymysql.connect(
             host=self.config.get('ApiaryDB', 'hostname'),
-            db=self.config.get('ApiaryDB', 'database'),
+            database=self.config.get('ApiaryDB', 'database'),
             user=self.config.get('ApiaryDB RW', 'username'),
-            passwd=self.config.get('ApiaryDB RW', 'password'),
+            password=self.config.get('ApiaryDB RW', 'password'),
             charset='utf8')
 
     def connectwiki(self, bot_name):

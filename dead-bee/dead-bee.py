@@ -14,6 +14,7 @@ import sys
 import time
 import traceback
 import urllib.error
+import urllib.parse
 import gzip
 import urllib.request
 
@@ -126,11 +127,29 @@ class DeadBee(ApiaryBot):
 
         return my_sites
 
+    def resolve_hostname(self, url):
+        """Return (True, '') if hostname resolves, (False, reason) otherwise."""
+        try:
+            parsed = urllib.parse.urlparse(url)
+            if not parsed.hostname:
+                return (False, 'no hostname in URL')
+            socket.setdefaulttimeout(5)
+            socket.getaddrinfo(parsed.hostname, None)
+            return (True, '')
+        except socket.gaierror as e:
+            return (False, 'DNS failure: %s' % e.strerror if e.strerror else 'DNS failure')
+        except Exception as e:
+            return (False, 'DNS check error: %s' % e)
+
     def probe_site(self, site):
         """Return (status, detail) where status is one of: ok, unreachable, http_error, not_mediawiki, timeout, error."""
         url = site['Has API URL']
         if not url:
             return ('unreachable', 'no API URL')
+
+        ok, reason = self.resolve_hostname(url)
+        if not ok:
+            return ('unreachable', reason)
 
         if '?' in url:
             probe_url = url + '&action=query&meta=siteinfo&format=json'
