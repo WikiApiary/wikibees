@@ -7,13 +7,13 @@ can persist code that the next cron run executes.
 
 Paths used below:
 
-| Path | Owner | Purpose |
-|---|---|---|
-| `/srv/wikibees` | `root:wikidev` | git checkout, read-only to the bot user |
-| `/srv/wikibees/.venv` | `root:wikidev` | interpreter, read-only to the bot user |
-| `/etc/wikibees/apiary.cfg` | `root:wikibees` `0640` | credentials, outside the checkout |
-| `/var/log/wikibees` | `wikibees:adm` `2750` | cron output |
-| `/run/wikibees` | `wikibees:wikibees` `0775` | Dead Bee PID lock (tmpfiles) |
+|Path                      |Owner                     |Purpose                                |
+|--------------------------|--------------------------|---------------------------------------|
+|`/srv/wikibees`           |`root:wikidev`            |git checkout, read-only to the bot user|
+|`/srv/wikibees/.venv`     |`root:wikidev`            |interpreter, read-only to the bot user |
+|`/etc/wikibees/apiary.cfg`|`root:wikibees` `0640`    |credentials, outside the checkout      |
+|`/var/log/wikibees`       |`wikibees:adm` `2750`     |cron output                            |
+|`/run/wikibees`           |`wikibees:wikibees` `0775`|Dead Bee PID lock (tmpfiles)           |
 
 ## Install order
 
@@ -33,8 +33,11 @@ sudo install -o root -g root -m 0644 \
      contrib/tmpfiles-wikibees.conf /etc/tmpfiles.d/wikibees.conf
 sudo systemd-tmpfiles --create /etc/tmpfiles.d/wikibees.conf
 
-# 3. code is admin-owned and group-writable, not bot-writable
-sudo chown -R root:wikidev /srv/wikibees/{.git,lib,bumble-bee,dead-bee,.venv}
+# 3. code is admin-owned and group-writable, not bot-writable.
+#    Run this ONLY after step 1: it makes every file in the checkout
+#    world-readable, so the tree-local apiary.cfg must be gone first.
+sudo rm /srv/wikibees/bumble-bee/apiary.cfg
+sudo chown -R root:wikidev /srv/wikibees
 sudo find /srv/wikibees -type d -exec chmod 2775 {} +
 sudo find /srv/wikibees -type f -perm -u+x -exec chmod 775 {} +
 sudo find /srv/wikibees -type f ! -perm -u+x -exec chmod 664 {} +
@@ -42,6 +45,21 @@ sudo find /srv/wikibees -type f ! -perm -u+x -exec chmod 664 {} +
 # 4. schedule
 sudo install -o root -g root -m 0644 contrib/cron.d-wikibees /etc/cron.d/wikibees
 ```
+
+> **If you already ran step 3 with the tree-local config still present**, it is
+> now `root:wikidev 0664` — world-readable credentials. Delete it:
+>
+> ```bash
+> sudo rm /srv/wikibees/bumble-bee/apiary.cfg
+> ```
+>
+> The password should also be rotated, since it sat readable for the window
+> between the two steps.
+
+After step 1 the config of record is `/etc/wikibees/apiary.cfg`, so manual
+runs need `--config /etc/wikibees/apiary.cfg` — the cron entries already pass
+it, and a manual run without it now fails loudly instead of silently reading a
+stale tree-local copy.
 
 Deploys are then a plain `git pull` by anyone in `wikidev`: no sudo, because
 the checkout and `.git` are group-writable. Only installing cron or touching
