@@ -1,0 +1,8 @@
+/var/log/wikibees/*.log {
+    weekly
+    rotate 8
+    compress
+    missingok
+    notifempty
+    copytruncate
+}
