@@ -18,7 +18,6 @@ import sys
 import time
 import traceback
 import urllib.error
-import urllib.parse
 import urllib.request
 
 sys.path.append('../lib')
@@ -230,20 +229,6 @@ class DeadBee(ApiaryBot):
         if any(x in lowered for x in ['checking your browser', 'ddos-guard', 'under attack', 'attention required']):
             return True
         return False
-
-    def resolve_hostname(self, url):
-        """Return (True, '') if hostname resolves, (False, reason) otherwise."""
-        try:
-            parsed = urllib.parse.urlparse(url)
-            if not parsed.hostname:
-                return (False, 'no hostname in URL')
-            socket.setdefaulttimeout(5)
-            socket.getaddrinfo(parsed.hostname, None)
-            return (True, '')
-        except socket.gaierror as e:
-            return (False, 'DNS failure: %s' % (e.strerror if e.strerror else 'unknown'))
-        except Exception as e:
-            return (False, 'DNS check error: %s' % e)
 
     def probe_site(self, site):
         """Return (status, detail)."""

@@ -13,6 +13,7 @@ import pytz
 import configparser
 import argparse
 import socket
+import sys
 import pymysql.cursors
 import json as simplejson
 import ssl
@@ -21,6 +22,7 @@ import re
 import gzip
 from io import StringIO
 import urllib
+import urllib.parse
 from simplemediawiki import MediaWiki
 
 def list_get(L, i, v=False):
@@ -68,6 +70,7 @@ class ApiaryBot:
         self.stats['whois'] = 0
         self.stats['maxmind'] = 0
         self.stats['interwikimap'] = 0
+        self.stats['skipped_dns'] = 0
         self.stats['libraries'] = 0
         self.stats['namespaces'] = 0
 
@@ -101,6 +104,31 @@ class ApiaryBot:
         now = now.replace(tzinfo=pytz.utc)
         now = now.replace(microsecond=0)
         return now.strftime('%Y-%m-%d %H:%M:%S')
+
+    def resolve_hostname(self, url):
+        """Return (True, '') if the URL's hostname resolves, (False, reason) if not.
+
+        A site whose DNS is dead fails once per collection step, so callers use
+        this as a cheap pre-check and skip the site instead.
+        """
+        try:
+            hostname = urllib.parse.urlparse(url).hostname
+        except Exception as e:
+            return (False, 'DNS check error: %s' % e)
+        if not hostname:
+            return (False, 'no hostname in URL')
+
+        previous_timeout = socket.getdefaulttimeout()
+        try:
+            socket.setdefaulttimeout(5)
+            socket.getaddrinfo(hostname, None)
+            return (True, '')
+        except socket.gaierror as e:
+            return (False, 'DNS failure: %s' % (e.strerror if e.strerror else 'unknown'))
+        except Exception as e:
+            return (False, 'DNS check error: %s' % e)
+        finally:
+            socket.setdefaulttimeout(previous_timeout)
 
     def make_request(self, site, data_url, bot='Bumble Bee'):
         req = urllib.request.Request(data_url)
@@ -268,15 +296,30 @@ class ApiaryBot:
         if self.args.verbose >= 3:
             print( "result:%s"%c )
 
-    def connectdb(self):
+    def connectdb(self, attempts=5, delay=15):
         # Setup our database connection
         # Use the account that can also insert and delete from the database
-        self.apiary_db = pymysql.connect(
-            host=self.config.get('ApiaryDB', 'hostname'),
-            database=self.config.get('ApiaryDB', 'database'),
-            user=self.config.get('ApiaryDB RW', 'username'),
-            password=self.config.get('ApiaryDB RW', 'password'),
-            charset='utf8')
+        # A single connection blip used to abort a whole crawl run, so retry.
+        last_error = None
+        for attempt in range(1, attempts + 1):
+            try:
+                self.apiary_db = pymysql.connect(
+                    host=self.config.get('ApiaryDB', 'hostname'),
+                    database=self.config.get('ApiaryDB', 'database'),
+                    user=self.config.get('ApiaryDB RW', 'username'),
+                    password=self.config.get('ApiaryDB RW', 'password'),
+                    charset='utf8')
+            except Exception as e:
+                last_error = e
+                print("WARNING: database connection attempt %d of %d failed: %s"
+                      % (attempt, attempts, e), file=sys.stderr)
+                if attempt < attempts:
+                    time.sleep(delay * attempt)
+            else:
+                if attempt > 1:
+                    print("Connected to database on attempt %d." % attempt)
+                return
+        raise last_error
 
     def connectwiki(self, bot_name):
         self.apiary_wiki = MediaWiki(
