@@ -1127,6 +1127,23 @@ class BumbleBee(ApiaryBot):
                 self.botlog(bot=thisBot, duration=float(duration), message=message)
             if self.args.verbose >= 1:
                 print("\n\n%d: Processing %s (ID %d)" % (i, site['pagename'], site['Has ID']))
+
+            # A hostname that does not resolve would fail once per collection
+            # step below. Check it once up front and skip the site entirely.
+            if site['Has API URL']:
+                (resolves, reason) = self.resolve_hostname(site['Has API URL'])
+                if not resolves:
+                    self.stats['skipped_dns'] += 1
+                    self.record_error(
+                        site=site,
+                        log_message="URLError: %s" % reason,
+                        log_type='error',
+                        log_severity='normal',
+                        log_bot=thisBot,
+                        log_url=site['Has API URL']
+                        )
+                    continue
+
             req_statistics = False
             req_general = False
             if self.args.force:
@@ -1208,9 +1225,9 @@ class BumbleBee(ApiaryBot):
             self.stats['skins'], self.stats['skippedstatistics'], self.stats['skippedgeneral'],
             self.stats['whois'], self.stats['maxmind']
         )
-        message += "interwikimap: %d namespaces: %d libraries: %d" % (
+        message += "interwikimap: %d namespaces: %d libraries: %d skipped_dns: %d" % (
             self.stats['interwikimap'], self.stats['namespaces'],
-            self.stats['libraries']
+            self.stats['libraries'], self.stats['skipped_dns']
         )
         print(message)
         self.botlog(bot=thisBot, duration=float(duration), message=message)
