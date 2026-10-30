@@ -44,6 +44,11 @@ sudo find /srv/wikibees -type f ! -perm -u+x -exec chmod 664 {} +
 
 # 4. schedule
 sudo install -o root -g root -m 0644 contrib/cron.d-wikibees /etc/cron.d/wikibees
+
+# 5. log rotation (cron appends forever)
+sudo install -o root -g root -m 0644 \
+     contrib/logrotate-wikibees /etc/logrotate.d/wikibees
+sudo /usr/sbin/logrotate --debug /etc/logrotate.d/wikibees
 ```
 
 > **If you already ran step 3 with the tree-local config still present**, it is
@@ -67,11 +72,16 @@ the checkout and `.git` are group-writable. Only installing cron or touching
 
 ## Log rotation
 
-Cron appends forever, so rotate `/var/log/wikibees/*.log` — weekly with
-`copytruncate` is enough:
+`contrib/logrotate-wikibees` is the stanza of record, installed in step 5.
+It must keep `copytruncate`: cron appends as `wikibees`, and without it
+logrotate would rename the live log and create a root-owned replacement that
+cron cannot write to. Verify a fresh install with a forced rotation of a
+scratch file — the truncated file should stay zero bytes and stay
+`wikibees:adm`:
 
-```
-/var/log/wikibees/*.log {
+```bash
+cat <<'EOF' | sudo tee /tmp/lot.conf >/dev/null
+/var/log/wikibees/rotatetest.log {
     weekly
     rotate 8
     compress
@@ -79,7 +89,17 @@ Cron appends forever, so rotate `/var/log/wikibees/*.log` — weekly with
     notifempty
     copytruncate
 }
+EOF
+sudo -u wikibees sh -c 'head -c 200000 /dev/urandom | base64 > /var/log/wikibees/rotatetest.log'
+sudo /usr/sbin/logrotate --force /tmp/lot.conf
+sudo ls -l /var/log/wikibees/rotatetest.log*
+sudo rm /var/log/wikibees/rotatetest.log*
 ```
+
+A pre-existing `/etc/logrotate.d/wikibees` left over from the old
+`/srv/wikibees/log` layout should be replaced wholesale rather than appended
+to; an orphaned stanza without `missingok` makes the nightly run report
+`stat` errors once the old directory is removed.
 
 ## Retired
 
