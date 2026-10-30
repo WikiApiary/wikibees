@@ -9,6 +9,7 @@ immediately and across runs.
 
 import argparse
 import atexit
+import errno
 import gzip
 import json
 import os
@@ -31,8 +32,8 @@ class DeadBee(ApiaryBot):
         self.config = None
         self.apiary_wiki = None
         self.apiary_db = None
-        self.lock_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'dead-bee.lock')
         self.get_args()
+        self.lock_path = self.args.lock_file
         self.acquire_lock()
         self.get_config(self.args.config)
         self.connectdb()
@@ -48,11 +49,25 @@ class DeadBee(ApiaryBot):
                         os.kill(old_pid, 0)
                         print("Dead Bee already running (PID %d). Exiting." % old_pid, file=sys.stderr)
                         sys.exit(0)
-                    except OSError:
-                        # stale lock
-                        pass
+                    except OSError as e:
+                        # ESRCH means the process is gone and the lock is stale.
+                        # Anything else (EPERM, since the PID now belongs to
+                        # another user) means it is alive: refuse to run rather
+                        # than risk two crawlers at once.
+                        if e.errno != errno.ESRCH:
+                            print("Lock file %s held by live PID %d. Exiting." % (self.lock_path, old_pid),
+                                  file=sys.stderr)
+                            sys.exit(0)
             except (ValueError, OSError):
                 pass
+
+        lock_dir = os.path.dirname(self.lock_path)
+        if lock_dir and not os.path.isdir(lock_dir):
+            try:
+                os.makedirs(lock_dir)
+            except OSError as e:
+                print("WARNING: could not create lock directory %s: %s" % (lock_dir, e), file=sys.stderr)
+
         try:
             with open(self.lock_path, 'w') as f:
                 f.write(str(os.getpid()))
@@ -82,6 +97,9 @@ class DeadBee(ApiaryBot):
         parser.add_argument("--threshold", type=int, default=3,
                             help="consecutive failures before marking defunct (default 3)")
         parser.add_argument("--timeout", type=int, default=30, help="probe timeout in seconds")
+        parser.add_argument("--lock-file", default="/run/wikibees/dead-bee.lock",
+                            help="lock file used to prevent concurrent runs "
+                                 "(default /run/wikibees/dead-bee.lock)")
         parser.add_argument("-d", "--debug", action="store_true",
                             help="do not write any changes to wiki or database")
         parser.add_argument("--config", default="../bumble-bee/apiary.cfg",

@@ -1,0 +1,30 @@
+# /etc/cron.d/wikibees -- production schedule for the WikiApiary bots on scripts.
+#
+# Installed from this repo; do not edit in place. See contrib/README.md for the
+# full install order (it matters: the log and config directories must exist
+# before this file is installed, or every run fails on startup).
+#
+# One Bumble Bee segment per day on a 9-day rotation. Each segment has roughly
+# 640-720 active sites; running more than one at a time overlaps and overloads
+# the current production host.
+
+SHELL=/bin/bash
+PATH=/usr/local/bin:/usr/bin:/bin
+# Failure output only reaches someone if this points at a monitored mailbox.
+MAILTO=root
+PYTHONDONTWRITEBYTECODE=1
+
+0 4 1,10,19,28 * * wikibees cd /srv/wikibees/bumble-bee && /srv/wikibees/.venv/bin/python -u bumble-bee.py --segment 0 -v --config /etc/wikibees/apiary.cfg >> /var/log/wikibees/bumble-bee-segment0.log 2>&1
+0 4 2,11,20,29 * * wikibees cd /srv/wikibees/bumble-bee && /srv/wikibees/.venv/bin/python -u bumble-bee.py --segment 1 -v --config /etc/wikibees/apiary.cfg >> /var/log/wikibees/bumble-bee-segment1.log 2>&1
+0 4 3,12,21,30 * * wikibees cd /srv/wikibees/bumble-bee && /srv/wikibees/.venv/bin/python -u bumble-bee.py --segment 2 -v --config /etc/wikibees/apiary.cfg >> /var/log/wikibees/bumble-bee-segment2.log 2>&1
+0 4 4,13,22,31 * * wikibees cd /srv/wikibees/bumble-bee && /srv/wikibees/.venv/bin/python -u bumble-bee.py --segment 3 -v --config /etc/wikibees/apiary.cfg >> /var/log/wikibees/bumble-bee-segment3.log 2>&1
+0 4 5,14,23    * * wikibees cd /srv/wikibees/bumble-bee && /srv/wikibees/.venv/bin/python -u bumble-bee.py --segment 4 -v --config /etc/wikibees/apiary.cfg >> /var/log/wikibees/bumble-bee-segment4.log 2>&1
+0 4 6,15,24    * * wikibees cd /srv/wikibees/bumble-bee && /srv/wikibees/.venv/bin/python -u bumble-bee.py --segment 5 -v --config /etc/wikibees/apiary.cfg >> /var/log/wikibees/bumble-bee-segment5.log 2>&1
+0 4 7,16,25    * * wikibees cd /srv/wikibees/bumble-bee && /srv/wikibees/.venv/bin/python -u bumble-bee.py --segment 6 -v --config /etc/wikibees/apiary.cfg >> /var/log/wikibees/bumble-bee-segment6.log 2>&1
+0 4 8,17,26    * * wikibees cd /srv/wikibees/bumble-bee && /srv/wikibees/.venv/bin/python -u bumble-bee.py --segment 7 -v --config /etc/wikibees/apiary.cfg >> /var/log/wikibees/bumble-bee-segment7.log 2>&1
+0 4 9,18,27    * * wikibees cd /srv/wikibees/bumble-bee && /srv/wikibees/.venv/bin/python -u bumble-bee.py --segment 8 -v --config /etc/wikibees/apiary.cfg >> /var/log/wikibees/bumble-bee-segment8.log 2>&1
+
+# Dead Bee - mark unreachable/non-MediaWiki sites defunct.
+# Weekly; needs --threshold consecutive failures before editing wiki pages, so a
+# dead site takes three runs to be marked.
+0 3 * * 0 wikibees cd /srv/wikibees/dead-bee && /srv/wikibees/.venv/bin/python -u dead-bee.py --config /etc/wikibees/apiary.cfg >> /var/log/wikibees/dead-bee.log 2>&1
